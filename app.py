@@ -57,6 +57,24 @@ def submit_user_info():
             'timestamp': datetime.datetime.now().isoformat()
         }), 400
 
+    # --- WRITE FILES ---
+    # Save resume
+    if resume_text:
+        with open(f"{name.replace(' ', '_')}_resume.txt", "w") as f:
+            f.write(resume_text)
+
+    # Save jobs wanted
+    if jobs_wanted:
+        with open(f"{name.replace(' ', '_')}_jobs.json", "w") as f:
+            import json
+            # if jobs_wanted is a string, convert to list
+            if isinstance(jobs_wanted, str):
+                jobs_list = [job.strip() for job in jobs_wanted.split(",")]
+            else:
+                jobs_list = jobs_wanted
+            json.dump(jobs_list, f, indent=4)
+
+    # --- OPTIONAL: Save to DB ---
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
@@ -70,17 +88,18 @@ def submit_user_info():
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({
-            "status": "success",
-            "message": "User info submitted",
-            'timestamp': datetime.datetime.now().isoformat()
-        }), 201
     except Exception as e:
         return jsonify({
             "status": "failure",
             "message": f"Database insert failed: {str(e)}",
             'timestamp': datetime.datetime.now().isoformat()
         }), 500
+
+    return jsonify({
+        "status": "success",
+        "message": "User info submitted and files saved",
+        'timestamp': datetime.datetime.now().isoformat()
+    }), 201
 
 
 def fetch_jobs(limit=None):

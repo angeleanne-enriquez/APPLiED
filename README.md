@@ -87,7 +87,10 @@ You should see:
 }
 ```
 
-**Step 3**: Submit User Into (tentative)
+**Step 3**: Submit User Into (with open for files)
+- <name>_resume.txt → contains the resume text
+- <name>_jobs.json → contains jobs wanted as a JSON array
+
 ```bash
 curl -X POST http://127.0.0.1:5001/submit \
 -H "Content-Type: application/json" \
@@ -103,11 +106,11 @@ You should see (in terminal):
 ```bash
 {
   "status": "success",
-  "message": "User info submitted",
+  "message": "User info submitted and files saved",
   "timestamp": "2026-02-08T23:15:01.123456"
 }
-
 ```
+And you should also see two additional files appear.
 
 ---
 
