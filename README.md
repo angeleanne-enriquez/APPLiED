@@ -120,8 +120,10 @@ curl http://127.0.0.1:5001/fetch-jobs
 ```
 
 You should see:
+```bash
 {
   "status": "success",
   "message": "Fetched and stored 25 jobs",
   "timestamp": "2026-02-09T00:00:35.914885"
 }
+```
