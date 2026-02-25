@@ -1,6 +1,0 @@
-flask
-python-dotenv
-psycopg2-binary
-requests
-langgraph
-langchain
