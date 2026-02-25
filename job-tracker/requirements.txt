@@ -1,4 +1,6 @@
-DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<db>flask
+flask
 python-dotenv
 psycopg2-binary
 requests
+langgraph
+langchain
