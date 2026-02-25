@@ -1,6 +1,6 @@
 from typing import TypedDict, List, Optional
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     user_id: str
     user_profile: Optional[dict]
     jobs_list: Optional[List[dict]]

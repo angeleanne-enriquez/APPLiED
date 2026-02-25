@@ -36,7 +36,7 @@ job-tracker/
    ```powershell
    cd C:\APPLiED\job-tracker
    python -m venv venv
-   .\venv\Scripts\Activate.ps1    # PowerShell
+   .\venv\Scripts\Activate.ps1 
    ```
 
 3. **Install dependencies**
@@ -66,13 +66,17 @@ job-tracker/
     * Running on http://127.0.0.1:5001
    ```
 
-6. **Test the endpoints**
+6. **Test the endpoints (with Mock Data)**
    ```powershell
    curl http://localhost:5001/health
    curl http://localhost:5001/db
    curl http://localhost:5001/fetch-jobs
    # POST a profile:
    curl -X POST http://localhost:5001/profiles -H "Content-Type: application/json" -d '{"email":"a@b.com","first_name":"A","last_name":"B"}'
+   # run the agent (matches jobs for a user)
+   curl -X POST http://localhost:5001/agent \
+        -H "Content-Type: application/json" \
+        -d '{"user_id":"123"}'
    ```
 
    Any request to `/` will return 404; only the routes above are defined.
