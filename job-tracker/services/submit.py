@@ -29,7 +29,7 @@ def submit_user_info():
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 1️⃣ Insert into users
+        # 1. insert into users
         cur.execute(
             """
             INSERT INTO users (id, email, first_name, last_name, created_at)
@@ -40,7 +40,7 @@ def submit_user_info():
         )
         user_id = cur.fetchone()[0]
 
-        # 2️⃣ Insert into profiles
+        # 2. insert into profiles
         cur.execute(
             """
             INSERT INTO profiles (user_id, resume_text, preferences_json)

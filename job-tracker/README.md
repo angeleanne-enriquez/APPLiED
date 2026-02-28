@@ -17,11 +17,18 @@ job-tracker/
 ├── README.md             # you are reading it
 ├── services/             # individual feature modules
 │   ├── __init__.py       # imports/exports blueprints
+│   ├── agent.py          # /agent
 │   ├── health.py         # /health, /debug/dburl
 │   ├── db.py             # /db and /health/db
 │   ├── submit.py         # /submit endpoint
 │   ├── jobs.py           # /fetch-jobs and accompanying fetch routine
 │   └── profiles.py       # /profiles POST & GET
+├── graph/                # agent logic
+│   ├── __init__.py       # imports/exports blueprints
+│   ├── graph_builder.py  # logic to build the LangGraph graph
+│   └── state.py          # State dataclass definition
+├── mock/                 # agent logic
+│   └── mock_data.py      # mock data for testing endpoints without DB
 └── .env                  # (not checked in) environment variables
 ```
 
