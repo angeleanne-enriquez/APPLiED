@@ -1,78 +1,204 @@
 from flask import Blueprint, jsonify, request
 import datetime
-import requests
 import json
+import requests
 import psycopg2
+from psycopg2.extras import RealDictCursor
 
 from config import DATABASE_URL
 
+jobs_bp = Blueprint("jobs", __name__)
 
-jobs_bp = Blueprint('jobs', __name__)
 
 
-def fetch_jobs(limit=None):
+def fetch_remotive_jobs(limit=None):
+    """
+    Fetch jobs from Remotive API.
+    """
     url = "https://remotive.com/api/remote-jobs"
     params = {}
     if limit:
         params["limit"] = limit
 
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(f"Remotive API returned {response.status_code}")
+    r = requests.get(url, params=params, timeout=30)
+    if r.status_code != 200:
+        raise Exception(f"Remotive API returned {r.status_code}: {r.text[:200]}")
 
-    data = response.json()
-    jobs = data.get("jobs", [])
+    return r.json().get("jobs", [])
 
-    with open("jobs.json", "w") as f:
-        json.dump(jobs, f, indent=4)
+
+def ingest_jobs(jobs, source_name="Remotive", write_json=True):
+    """
+    Saves jobs to jobs.json (optional) and inserts into job_postings.
+    Returns (inserted_count, received_count).
+    Deduped by UNIQUE(external_id, source) or ON CONFLICT (external_id, source).
+    """
+    if write_json:
+        with open("jobs.json", "w", encoding="utf-8") as f:
+            json.dump(jobs, f, indent=4)
+
+    inserted = 0
+    received = len(jobs)
+
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
 
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
         for job in jobs:
+            external_id = str(job.get("id"))
+            title = job.get("title")
+            company = job.get("company_name")
+            category = job.get("category")
+
+            
+            location = (
+                job.get("candidate_required_location")
+                or job.get("location")
+                or job.get("category")
+            )
+
+            url = job.get("url")
+            description = job.get("description")
+
             cur.execute(
                 """
                 INSERT INTO job_postings (
-                    id, external_id, source, title, company, location, url, description, raw_json, ingested_at
+                    id,
+                    external_id,
+                    source,
+                    title,
+                    company,
+                    location,
+                    category,
+                    url,
+                    description,
+                    raw_json,
+                    ingested_at
                 ) VALUES (
-                    gen_random_uuid(), %s, %s, %s, %s, %s, %s, %s, %s, NOW()
+                    gen_random_uuid(),
+                    %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s::jsonb,
+                    NOW()
                 )
                 ON CONFLICT (external_id, source) DO NOTHING
                 """,
                 (
-                    job.get("id"),
-                    job.get("source_name", "Remotive"),  # example source
-                    job.get("title"),
-                    job.get("company_name"),
-                    job.get("category"),
-                    job.get("url"),
-                    job.get("description"),
-                    json.dumps(job)
-                )
+                    external_id,
+                    source_name,
+                    title,
+                    company,
+                    location,
+                    category,
+                    url,
+                    description,
+                    json.dumps(job),
+                ),
             )
+
+            
+            if cur.rowcount == 1:
+                inserted += 1
+
         conn.commit()
+        return inserted, received
+
+    finally:
         cur.close()
         conn.close()
-        print(f"{len(jobs)} jobs saved to database and JSON")
-    except Exception as e:
-        print(f"Error saving to database: {e}")
-
-    return len(jobs)
 
 
-@jobs_bp.route('/fetch-jobs', methods=['GET'])
-def fetch_jobs_endpoint():
+
+@jobs_bp.route("/jobs/ingest", methods=["POST"])
+def jobs_ingest():
+    """
+    POST /jobs/ingest
+    Body JSON:
+      {
+        "limit": 15,              // optional
+        "write_json": true,       // optional (default true)
+        "source": "Remotive"      // optional (default Remotive)
+      }
+    """
+    data = request.get_json(silent=True) or {}
+
+    limit = data.get("limit")
+    write_json = bool(data.get("write_json", True))
+    source_name = data.get("source", "Remotive")
+
     try:
-        limit = request.args.get("limit", type=int)
-        count = fetch_jobs(limit=limit)
+        jobs = fetch_remotive_jobs(limit=limit)
+        inserted, received = ingest_jobs(
+            jobs,
+            source_name=source_name,
+            write_json=write_json
+        )
+
         return jsonify({
             "status": "success",
-            "message": f"Fetched and stored {count} jobs",
-            'timestamp': datetime.datetime.now().isoformat()
+            "source": source_name.lower(),
+            "received": received,
+            "inserted": inserted,
+            "timestamp": datetime.datetime.now().isoformat()
         }), 200
+
     except Exception as e:
         return jsonify({
             "status": "failure",
             "message": str(e),
-            'timestamp': datetime.datetime.now().isoformat()
+            "timestamp": datetime.datetime.now().isoformat()
         }), 500
+
+
+@jobs_bp.route("/jobs", methods=["GET"])
+def list_jobs():
+    """
+    GET /jobs?limit=25
+    Quick sanity endpoint to verify jobs in DB.
+    """
+    limit = request.args.get("limit", default=25, type=int)
+    limit = max(1, min(limit, 200))
+
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cur.execute(
+            """
+            SELECT
+                id,
+                external_id,
+                source,
+                title,
+                company,
+                location,
+                category,
+                url,
+                ingested_at
+            FROM job_postings
+            ORDER BY ingested_at DESC
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+
+        return jsonify({
+            "status": "success",
+            "count": len(rows),
+            "jobs": rows,
+            "timestamp": datetime.datetime.now().isoformat()
+        }), 200
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+# keep old route name so nobody is confused if they call it
+@jobs_bp.route("/fetch-jobs", methods=["GET"])
+def fetch_jobs_removed():
+    return jsonify({
+        "status": "failure",
+        "message": "Endpoint removed. Use POST /jobs/ingest instead.",
+        "timestamp": datetime.datetime.now().isoformat()
+    }), 410
