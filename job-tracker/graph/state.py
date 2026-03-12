@@ -3,23 +3,28 @@ from typing import TypedDict, List, Dict, Optional
 
 class ScoredJob(TypedDict):
     job_postings_id: str
-    score: float
+    score: float        # 0–100 composite score
     rationale: str
 
 
 class AgentState(TypedDict, total=False):
-    # required input
+    # ── input ──────────────────────────────────────────────────────────────────
     user_id: str
 
-    # loaded from DB (mocked for now)
+    # ── loaded from DB ─────────────────────────────────────────────────────────
+    user_profile: Dict          # id, email, first_name, last_name
     resume_text: str
-    preferences: Dict
+    preferences: Dict           # location, job_type, remote, salary_min, …
+    resume_skills: List[str]    # pre-extracted skills from resume (set once, reused)
 
-    # loaded from DB (mocked for now)
+    # ── jobs ───────────────────────────────────────────────────────────────────
     candidate_jobs: List[Dict]
+    jobs_list: List[Dict]       # alias kept for API compatibility
 
-    # produced by scoring node
+    # ── scoring ────────────────────────────────────────────────────────────────
     scored_jobs: List[ScoredJob]
+    matched_jobs: List[ScoredJob]   # alias for scored_jobs (top-N + rest)
 
-    # final formatted response (top N jobs)
+    # ── output ─────────────────────────────────────────────────────────────────
     final_response: str
+    error: str

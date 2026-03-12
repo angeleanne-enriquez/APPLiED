@@ -84,6 +84,9 @@ job-tracker/
    curl -X POST http://localhost:5001/agent \
         -H "Content-Type: application/json" \
         -d '{"user_id":"123"}'
+
+   # or run with the correct user_id from your DB:
+   python3 test_agent.py
    ```
 
    Any request to `/` will return 404; only the routes above are defined.
