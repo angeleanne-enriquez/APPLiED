@@ -33,7 +33,7 @@ def fetch_google_jobs(job_type=None, location=None):
     """
     params = {
         "engine": "google_jobs",
-        "api_key": "15f9f0bdf0bf63523f67b648f66d47fca921686163fd61ce792cd5d0e8eff24e"
+        "api_key": "INSERT API KEY HERE"
     }
 
     if job_type and location:

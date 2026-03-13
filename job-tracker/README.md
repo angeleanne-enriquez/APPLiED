@@ -49,6 +49,7 @@ job-tracker/
 3. **Install dependencies**
    ```powershell
    pip install -r requirements.txt
+   pip install google-genai
    ```
 
 4. **Configure environment**

@@ -6,6 +6,9 @@ from graph.state import AgentState
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from services.db import DATABASE_URL
+import os
+from google import genai
+GEMINI_API_KEY = "INSERT KEY HERE"
 
 top_n = 5  # number of jobs to return in response
 
@@ -293,8 +296,97 @@ def score_jobs_node(state: AgentState) -> AgentState:
     state["matched_jobs"] = scored_jobs
     return state
 
+# ─── node 4: ranking using an LLM ──────────────────────────────────────────────────
 
-# ─── node 4: persist_results ──────────────────────────────────────────────────
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+num_ranked_jobs = 20 #can adjust this to any job amount
+GEMINI_MODEL = "gemini-2.0-flash"
+
+def llm_rerank_node(state: AgentState) -> AgentState:
+    resume_text = state.get("resume_text", "")
+    scored_jobs = state.get("scored_jobs", [])
+    candidate_jobs = {j["id"]: j for j in state.get("candidate_jobs", [])}
+
+    job_pool = scored_jobs[:num_ranked_jobs]
+    if not job_pool: return state
+
+    jobs_for_prompt = []
+    for entry in job_pool:
+        job_id = entry["job_postings_id"]
+        job = candidate_jobs.get(job_id, {})
+        jobs_for_prompt.append({
+            "id": job_id,
+            "title": job.get("title", ""),
+            "company": job.get("company", ""),
+            "location": job.get("location", ""),
+            "description": (job.get("description") or "")[:800],
+            "category": job.get("category", ""),
+        })
+
+    prompt = f"""You are a technical recruiter. Score each job for this candidate.
+
+## Candidate Resume (summary)
+{resume_text[:2000]}
+
+## Jobs to Score
+{json.dumps(jobs_for_prompt, indent=2)}
+
+Return ONLY a JSON array — no prose, no markdown fences. Each element:
+{{
+  "job_postings_id": "<id>",
+  "score": <0-100>,
+  "rationale": "<2-3 sentence explanation referencing specific resume skills and job requirements>"
+}}
+
+Scoring rubric:
+- 80-100: Excellent fit, most required skills present, strong alignment
+- 60-79:  Good fit, some skill gaps but transferable experience
+- 40-59:  Partial fit, notable gaps but worth considering
+- 0-39:   Poor fit
+"""
+
+    try:
+        response = gemini_client.models.generate_content(model = GEMINI_MODEL, contents = prompt)
+        raw = response.text.strip()
+
+        # in case gemini has markdown elements anyway
+        if raw.startswith("```"):
+            raw = re.sub(r"^```[a-z]*\n?", "", raw)
+            raw = re.sub(r"\n?```$", "", raw)
+
+        llm_results = json.loads(raw)
+
+    except json.JSONDecodeError:
+        state["error"] = f"Gemini output parse error: {raw[:200]}"
+        return state
+    except Exception as e:
+        state["error"] = f"Gemini API error: {str(e)}"
+        return state
+
+    llm_map = {r["job_postings_id"]: r for r in llm_results}
+
+    reranked = []
+    for entry in job_pool:
+        job_id = entry["job_postings_id"]
+        if job_id in llm_map:
+            llm_entry = llm_map[job_id]
+            reranked.append({
+                "job_postings_id": job_id,
+                "score": round(llm_entry["score"] * 0.7 + entry["score"] * 0.3, 2),
+                "rationale": llm_entry["rationale"],
+            })
+
+    reranked.sort(key=lambda x: x["score"], reverse=True)
+
+    llm_ids = {r["job_postings_id"] for r in reranked}
+    remainder = [j for j in scored_jobs[num_ranked_jobs:] if j["job_postings_id"] not in llm_ids]
+
+    state["scored_jobs"] = reranked + remainder
+    state["matched_jobs"] = state["scored_jobs"]
+    return state
+
+# ─── node 5: persist_results ──────────────────────────────────────────────────
 
 def persist_results_node(state: AgentState) -> AgentState:
     """Persist scored jobs to the job_matches table."""
@@ -319,7 +411,7 @@ def persist_results_node(state: AgentState) -> AgentState:
     return state
 
 
-# ─── node 5: response ────────────────────────────────────────────────────────
+# ─── node 6: response ────────────────────────────────────────────────────────
 
 def response_node(state: AgentState) -> AgentState:
     """Format top N scored jobs into a human-readable response."""
