@@ -5,3 +5,4 @@ requests
 langgraph
 langchain
 scikit-learn
+serpapi

@@ -14,7 +14,9 @@ class AgentState(TypedDict, total=False):
     # ── loaded from DB ─────────────────────────────────────────────────────────
     user_profile: Dict          # id, email, first_name, last_name
     resume_text: str
-    preferences: Dict           # location, job_type, remote, salary_min, …
+    major: List[str]
+    job_type: List[str]    
+    location: List[str]       # replaced preferences by these three factor to parse through easier when fetching jobs
     resume_skills: List[str]    # pre-extracted skills from resume (set once, reused)
 
     # ── jobs ───────────────────────────────────────────────────────────────────
