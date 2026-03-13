@@ -4,6 +4,7 @@ import json
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from serpapi import GoogleSearch
 
 from config import DATABASE_URL
 
@@ -25,6 +26,28 @@ def fetch_remotive_jobs(limit=None):
         raise Exception(f"Remotive API returned {r.status_code}: {r.text[:200]}")
 
     return r.json().get("jobs", [])
+
+def fetch_google_jobs(job_type=None, location=None):
+    """
+    Fetch jobs from Google Jobs using SerpApi.
+    """
+    params = {
+        "engine": "google_jobs",
+        "api_key": "15f9f0bdf0bf63523f67b648f66d47fca921686163fd61ce792cd5d0e8eff24e"
+    }
+
+    if job_type and location:
+        params["q"] = f"{job_type} jobs"
+        params["location"] = location
+    elif job_type:
+        params["q"] = f"{job_type} jobs"
+    elif location:
+        params["location"] = location
+
+    search = GoogleSearch(params)
+    results = search.get_dict()
+
+    return results.get("jobs_results", [])
 
 
 def ingest_jobs(jobs, source_name="Remotive", write_json=True):
@@ -106,7 +129,56 @@ def ingest_jobs(jobs, source_name="Remotive", write_json=True):
         cur.close()
         conn.close()
 
+@jobs_bp.route("/jobs/google/<user_id>", methods=["GET"]) #route should be by the user_id, so we can access their job_type and/or location
+def fetch_google_jobs_for_user(user_id):
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
+    try:
+        # Get user preferences
+        cur.execute(
+            """
+            select job_type, location
+            from profiles
+            where user_id = %s
+            """,
+            (user_id,)
+        )
+
+        profile = cur.fetchone()
+
+        if not profile:
+            return jsonify({
+                "status": "failure",
+                "message": "Profile not found",
+                "timestamp": datetime.datetime.now().isoformat()
+            }), 404
+
+        job_type = profile.get("job_type")
+        location = profile.get("location")
+
+        jobs = fetch_google_jobs(job_type=job_type, location=location)
+
+        return jsonify({
+            "status": "success",
+            "source": "google_jobs",
+            "job_type": job_type,
+            "location": location,
+            "count": len(jobs),
+            "jobs": jobs,
+            "timestamp": datetime.datetime.now().isoformat()
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "failure",
+            "message": str(e),
+            "timestamp": datetime.datetime.now().isoformat()
+        }), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 @jobs_bp.route("/jobs/ingest", methods=["POST"])
 def jobs_ingest():

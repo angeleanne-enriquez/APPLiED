@@ -18,7 +18,10 @@ def upsert_profile():
     first_name = data.get("first_name")
     last_name = data.get("last_name")
     resume_text = data.get("resume_text")
-    preferences = data.get("preferences") or {}
+    major = data.get("major") or {}
+    job_type = data.get("job_type") or {}
+    location = data.get("location") or {}
+    #parse through different indicators for what jobs a user might be interested in 
 
     if not email:
         return jsonify({
@@ -48,13 +51,15 @@ def upsert_profile():
         # 2) Upsert profile (profiles PK is user_id)
         cur.execute(
             """
-            insert into profiles (user_id, resume_text, preferences_json)
+            insert into profiles (user_id, resume_text, major, job_type, location)
             values (%s, %s, %s::jsonb)
             on conflict (user_id) do update
               set resume_text = excluded.resume_text,
-                  preferences_json = excluded.preferences_json;
+                  major = excluded.major,
+                  job_type = excluded.job_type,
+                  location = excluded location
             """,
-            (user_id, resume_text, json.dumps(preferences))
+            (user_id, resume_text, major, job_type, location) #no need for dump.json because major, job_type, location are strings/lists of strings
         )
 
         conn.commit()
@@ -84,7 +89,7 @@ def get_profile(user_id):
 
         cur.execute(
             """
-            select user_id, resume_text, preferences_json
+            select user_id, resume_text, major, job_type, location
             from profiles
             where user_id = %s
             """,
