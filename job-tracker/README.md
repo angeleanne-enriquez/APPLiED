@@ -11,25 +11,38 @@ a thin entrypoint that registers the blueprints and loads configuration.
 
 ```
 job-tracker/
-├── app.py                # application entry point
-├── config.py             # loads .env and exports DATABASE_URL
-├── requirements.txt      # python dependencies
-├── README.md             # you are reading it
-├── services/             # individual feature modules
-│   ├── __init__.py       # imports/exports blueprints
-│   ├── agent.py          # /agent
-│   ├── health.py         # /health, /debug/dburl
-│   ├── db.py             # /db and /health/db
-│   ├── submit.py         # /submit endpoint
-│   ├── jobs.py           # /fetch-jobs and accompanying fetch routine
-│   └── profiles.py       # /profiles POST & GET
-├── graph/                # agent logic
-│   ├── __init__.py       # imports/exports blueprints
-│   ├── graph_builder.py  # logic to build the LangGraph graph
-│   └── state.py          # State dataclass definition
-├── mock/                 # agent logic
-│   └── mock_data.py      # mock data for testing endpoints without DB
-└── .env                  # (not checked in) environment variables
+├── app.py # application entry point
+├── config.py # loads .env and exports DATABASE_URL
+├── requirements.txt # python dependencies
+├── README.md # you are reading it
+├── services/ # individual feature modules
+│ ├── init.py # imports/exports blueprints
+│ ├── agent.py # /agent
+│ ├── health.py # /health, /debug/dburl
+│ ├── db.py # /db and /health/db
+│ ├── submit.py # /submit endpoint
+│ ├── jobs.py # /fetch-jobs and accompanying fetch routine
+│ └── profiles.py # /profiles POST & GET
+├── templates/ # HTML templates for the frontend
+│ ├── 404.html
+│ ├── about.html
+│ ├── base.html
+│ ├── chat.html
+│ ├── dashboard.html
+│ ├── index.html
+│ ├── jobs.html
+│ ├── login.html
+│ ├── onboarding.html
+│ ├── profile.html
+│ ├── settings.html
+│ └── tailer.html
+├── graph/ # agent logic
+│ ├── init.py # imports/exports blueprints
+│ ├── graph_builder.py # logic to build the LangGraph graph
+│ └── state.py # State dataclass definition
+├── mock/ # agent logic
+│ └── mock_data.py # mock data for testing endpoints without DB
+└── .env # (not checked in) environment variables
 ```
 
 ## Getting Started

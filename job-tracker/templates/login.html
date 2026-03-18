@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Login — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .auth-wrapper {
+    min-height: calc(100vh - 65px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .auth-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .auth-tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .auth-form { display: flex; flex-direction: column; gap: 14px; }
+  .auth-form.hidden { display: none; }
+
+  .auth-divider {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+
+  .auth-footer {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .auth-footer a { color: var(--accent); text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div>
+      <div class="form-title">welcome back</div>
+      <div class="form-subtitle">sign in or create an account to continue</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login', this)">login</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup', this)">sign up</button>
+    </div>
+
+    <!-- Login Form -->
+    <form class="auth-form" id="form-login" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label>email</label>
+        <input type="email" id="login-email" placeholder="ada@example.com" required />
+      </div>
+      <div class="field">
+        <label>password</label>
+        <input type="password" id="login-password" placeholder="••••••••" required />
+      </div>
+      <button class="btn" type="submit">sign in</button>
+      <div class="auth-divider">— or —</div>
+      <a class="btn secondary" href="/dashboard" style="text-align:center">continue as guest</a>
+    </form>
+
+    <!-- Signup Form -->
+    <form class="auth-form hidden" id="form-signup" onsubmit="handleSignup(event)">
+      <div class="form-row">
+        <div class="field">
+          <label>first name</label>
+          <input type="text" id="signup-first" placeholder="Ada" required />
+        </div>
+        <div class="field">
+          <label>last name</label>
+          <input type="text" id="signup-last" placeholder="Lovelace" required />
+        </div>
+      </div>
+      <div class="field">
+        <label>email</label>
+        <input type="email" id="signup-email" placeholder="ada@example.com" required />
+      </div>
+      <div class="field">
+        <label>password</label>
+        <input type="password" id="signup-password" placeholder="choose a password" required />
+      </div>
+      <button class="btn" type="submit">create account</button>
+    </form>
+
+    <div class="auth-footer">
+      by continuing you agree to our <a href="/about">terms &amp; privacy policy</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchAuthTab(name, btn) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('form-login').classList.toggle('hidden', name !== 'login');
+    document.getElementById('form-signup').classList.toggle('hidden', name !== 'signup');
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    // TODO: wire up auth endpoint
+    toast('auth not implemented yet — redirecting to dashboard');
+    setTimeout(() => window.location.href = '/dashboard', 1000);
+  }
+
+  function handleSignup(e) {
+    e.preventDefault();
+    // TODO: wire up auth endpoint
+    toast('auth not implemented yet — redirecting to onboarding');
+    setTimeout(() => window.location.href = '/onboarding', 1000);
+  }
+</script>
+{% endblock %}

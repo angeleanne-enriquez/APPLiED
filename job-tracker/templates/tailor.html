@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Tailor Application — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tailor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 700px) { .tailor-grid { grid-template-columns: 1fr; } }
+
+  /* output tabs */
+  .output-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .output-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+    margin-bottom: -1px;
+  }
+
+  .output-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .output-pane { display: none; flex-direction: column; gap: 12px; }
+  .output-pane.active { display: flex; }
+
+  .output-content {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 0.8rem;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    min-height: 200px;
+    color: var(--text);
+    overflow-y: auto;
+    max-height: 420px;
+  }
+
+  .output-content.placeholder { color: var(--muted); font-style: italic; }
+
+  .output-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* generating state */
+  .generating-pulse {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+    color: var(--accent);
+    padding: 8px 0;
+  }
+
+  .generating-pulse.visible { display: flex; }
+
+  .pulse-dots { display: flex; gap: 4px; }
+  .pulse-dots span {
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .pulse-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .pulse-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* score badge */
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .score-badge .score-val {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--accent2);
+  }
+
+  .hint-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px;">
+  <div>
+    <div class="section-label">tailor application — /tailor/generate</div>
+  </div>
+
+  <div class="hint-box">
+    paste a job description below, then click <b>tailor resume</b> or <b>generate cover letter</b>.
+    the agent will edit your saved resume to match the role and write a personalized cover letter.
+    <br><br>
+    <b>tip:</b> make sure your profile &amp; resume are saved first — <a href="/profile" style="color:var(--accent);">go to profile →</a>
+  </div>
+
+  <div class="tailor-grid">
+
+    <!-- ── Left: Job input ── -->
+    <div class="form-card" style="gap: 16px;">
+      <div class="form-title">job details</div>
+
+      <div class="field">
+        <label>job title</label>
+        <input id="t-title" type="text" placeholder="Software Engineering Intern" />
+      </div>
+
+      <div class="field">
+        <label>company</label>
+        <input id="t-company" type="text" placeholder="Acme Corp" />
+      </div>
+
+      <div class="field">
+        <label>job description</label>
+        <textarea id="t-jd" rows="10" placeholder="paste the full job description here...&#10;&#10;the agent will read this and tailor your resume + cover letter accordingly."></textarea>
+      </div>
+
+      <div class="field">
+        <label>your user ID (for resume lookup)</label>
+        <input id="t-userid" type="text" placeholder="from your profile save response" />
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn" onclick="tailorBoth()">tailor both</button>
+        <button class="btn secondary" onclick="tailorResume()">resume only</button>
+        <button class="btn secondary" onclick="tailorCoverLetter()">cover letter only</button>
+      </div>
+
+      <div class="generating-pulse" id="generating-indicator">
+        <div class="pulse-dots"><span></span><span></span><span></span></div>
+        <span id="generating-label">agent is working...</span>
+      </div>
+    </div>
+
+    <!-- ── Right: Output ── -->
+    <div class="form-card" style="gap: 0;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div class="form-title">output</div>
+        <div class="score-badge" id="score-badge" style="display:none;">
+          match score <span class="score-val" id="score-val">—</span>/100
+        </div>
+      </div>
+
+      <div class="output-tabs">
+        <button class="output-tab active" onclick="switchOutputTab('resume', this)">tailored resume</button>
+        <button class="output-tab" onclick="switchOutputTab('cover', this)">cover letter</button>
+        <button class="output-tab" onclick="switchOutputTab('rationale', this)">agent notes</button>
+      </div>
+
+      <div class="output-pane active" id="out-resume">
+        <div class="output-content placeholder" id="content-resume">your tailored resume will appear here after you click "tailor both" or "resume only"...</div>
+        <div class="output-actions" id="actions-resume" style="display:none;">
+          <button class="btn secondary" onclick="copyOutput('content-resume')">copy</button>
+          <button class="btn ghost" onclick="downloadOutput('content-resume', 'tailored_resume.txt')">download .txt</button>
+        </div>
+      </div>
+
+      <div class="output-pane" id="out-cover">
+        <div class="output-content placeholder" id="content-cover">your cover letter will appear here after you click "tailor both" or "cover letter only"...</div>
+        <div class="output-actions" id="actions-cover" style="display:none;">
+          <button class="btn secondary" onclick="copyOutput('content-cover')">copy</button>
+          <button class="btn ghost" onclick="downloadOutput('content-cover', 'cover_letter.txt')">download .txt</button>
+        </div>
+      </div>
+
+      <div class="output-pane" id="out-rationale">
+        <div class="output-content placeholder" id="content-rationale">agent reasoning and match notes will appear here...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchOutputTab(name, btn) {
+    document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('out-resume').classList.toggle('active', name === 'resume');
+    document.getElementById('out-cover').classList.toggle('active', name === 'cover');
+    document.getElementById('out-rationale').classList.toggle('active', name === 'rationale');
+  }
+
+  function setGenerating(visible, label = 'agent is working...') {
+    const el = document.getElementById('generating-indicator');
+    el.classList.toggle('visible', visible);
+    document.getElementById('generating-label').textContent = label;
+    document.querySelectorAll('.tailor-grid .btn').forEach(b => b.disabled = visible);
+  }
+
+  function showOutput(resumeText, coverText, rationale, score) {
+    function populate(contentId, actionsId, text) {
+      const el = document.getElementById(contentId);
+      if (text) {
+        el.textContent = text;
+        el.classList.remove('placeholder');
+        document.getElementById(actionsId).style.display = 'flex';
+      }
+    }
+
+    populate('content-resume',    'actions-resume',  resumeText);
+    populate('content-cover',     'actions-cover',   coverText);
+
+    if (rationale) {
+      const el = document.getElementById('content-rationale');
+      el.textContent = rationale;
+      el.classList.remove('placeholder');
+    }
+
+    if (score !== undefined && score !== null) {
+      document.getElementById('score-val').textContent = score;
+      document.getElementById('score-badge').style.display = 'inline-flex';
+    }
+  }
+
+  async function callTailor(mode) {
+    const userId = document.getElementById('t-userid').value.trim();
+    const jd     = document.getElementById('t-jd').value.trim();
+    const title  = document.getElementById('t-title').value.trim();
+    const company = document.getElementById('t-company').value.trim();
+
+    if (!jd) { toast('paste a job description first', true); return; }
+    if (!userId) { toast('enter your user_id (from profile save)', true); return; }
+
+    const labels = { both: 'tailoring resume + cover letter...', resume: 'tailoring resume...', cover: 'writing cover letter...' };
+    setGenerating(true, labels[mode] || 'working...');
+
+    try {
+      const res  = await fetch('/tailor/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, job_description: jd, job_title: title, company, mode })
+      });
+      const data = await res.json();
+      setGenerating(false);
+
+      if (!res.ok || data.status === 'error') {
+        toast(data.message || 'tailoring failed', true);
+        return;
+      }
+
+      showOutput(data.tailored_resume, data.cover_letter, data.rationale, data.match_score);
+
+      // auto-switch tab based on what was generated
+      if (mode === 'cover') switchOutputTab('cover', document.querySelectorAll('.output-tab')[1]);
+      else                  switchOutputTab('resume', document.querySelectorAll('.output-tab')[0]);
+
+    } catch {
+      setGenerating(false);
+      toast('could not reach /tailor/generate — backend not yet implemented', true);
+    }
+  }
+
+  function tailorBoth()        { callTailor('both'); }
+  function tailorResume()      { callTailor('resume'); }
+  function tailorCoverLetter() { callTailor('cover'); }
+
+  function copyOutput(contentId) {
+    const text = document.getElementById(contentId).textContent;
+    navigator.clipboard.writeText(text).then(() => toast('copied to clipboard'));
+  }
+
+  function downloadOutput(contentId, filename) {
+    const text = document.getElementById(contentId).textContent;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Pre-fill from URL params (jobs.html links here with ?job_id=...)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('title'))   document.getElementById('t-title').value   = params.get('title');
+  if (params.get('company')) document.getElementById('t-company').value = params.get('company');
+  if (params.get('jd'))      document.getElementById('t-jd').value      = params.get('jd');
+</script>
+{% endblock %}

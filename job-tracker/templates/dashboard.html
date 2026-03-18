@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: fadeIn 0.2s ease both;
+  }
+
+  .stat-card:nth-child(2) { animation-delay: 0.05s; }
+  .stat-card:nth-child(3) { animation-delay: 0.10s; }
+  .stat-card:nth-child(4) { animation-delay: 0.15s; }
+  .stat-card:nth-child(5) { animation-delay: 0.20s; }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green  { color: var(--accent2); }
+  .stat-value.danger { color: var(--danger); }
+
+  .stat-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Application tracker ── */
+  .tracker-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .tracker-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 120px;
+  }
+
+  .tracker-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tracker-col-name {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .tracker-count {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .tracker-col.saved   .tracker-col-name { color: var(--muted); }
+  .tracker-col.applied .tracker-col-name { color: var(--accent); }
+  .tracker-col.interview .tracker-col-name { color: #f7a84a; }
+  .tracker-col.offer   .tracker-col-name { color: var(--accent2); }
+  .tracker-col.rejected .tracker-col-name { color: var(--danger); }
+
+  .tracker-empty {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .tracker-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.72rem;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tracker-chip-company { font-size: 0.65rem; color: var(--muted); }
+
+  /* ── Health ── */
+  .health-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .health-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+  }
+
+  .health-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .health-dot.ok { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .health-dot.err { background: var(--danger); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div>
+    <div class="section-label">overview</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-value accent" id="stat-jobs">—</span>
+      <span class="stat-label">jobs available</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="stat-applied">0</span>
+      <span class="stat-label">applied</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" style="color:#f7a84a;">0</span>
+      <span class="stat-label">interviews</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value green">0</span>
+      <span class="stat-label">offers</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="stat-agent">0</span>
+      <span class="stat-label">agent runs</span>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="section-label">quick actions</div>
+  <div class="quick-actions">
+    <a class="btn" href="/chat">run agent</a>
+    <a class="btn secondary" href="/browse">browse jobs</a>
+    <a class="btn secondary" href="/tailor">tailor resume</a>
+    <a class="btn ghost" href="/profile">edit profile</a>
+  </div>
+
+  <!-- Application tracker -->
+  <div class="section-label">application tracker</div>
+  <div class="tracker-board">
+    <div class="tracker-col saved">
+      <div class="tracker-col-header">
+        <span class="tracker-col-name">saved</span>
+        <span class="tracker-count">0</span>
+      </div>
+      <span class="tracker-empty">bookmark jobs from browse →</span>
+    </div>
+    <div class="tracker-col applied">
+      <div class="tracker-col-header">
+        <span class="tracker-col-name">applied</span>
+        <span class="tracker-count">0</span>
+      </div>
+      <span class="tracker-empty">no applications yet</span>
+    </div>
+    <div class="tracker-col interview">
+      <div class="tracker-col-header">
+        <span class="tracker-col-name">interview</span>
+        <span class="tracker-count">0</span>
+      </div>
+      <span class="tracker-empty">—</span>
+    </div>
+    <div class="tracker-col offer">
+      <div class="tracker-col-header">
+        <span class="tracker-col-name">offer</span>
+        <span class="tracker-count">0</span>
+      </div>
+      <span class="tracker-empty">—</span>
+    </div>
+    <div class="tracker-col rejected">
+      <div class="tracker-col-header">
+        <span class="tracker-col-name">rejected</span>
+        <span class="tracker-count">0</span>
+      </div>
+      <span class="tracker-empty">—</span>
+    </div>
+  </div>
+  <div style="font-size:0.7rem; color:var(--muted); margin-top: -8px;">
+    application tracking backend coming soon — drag-and-drop will be wired up here
+  </div>
+
+  <!-- Health -->
+  <div class="section-label">system status</div>
+  <div class="card">
+    <div class="health-row" id="health-row">
+      <div class="health-item">
+        <div class="health-dot" id="dot-api"></div>
+        <span id="label-api" style="color:var(--muted)">checking api...</span>
+      </div>
+      <div class="health-item">
+        <div class="health-dot" id="dot-db"></div>
+        <span id="label-db" style="color:var(--muted)">checking db...</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function loadStats() {
+    try {
+      const res  = await fetch('/jobs?limit=200');
+      const data = await res.json();
+      if (data.count !== undefined) {
+        document.getElementById('stat-jobs').textContent = data.count;
+      }
+    } catch { /* server may be offline */ }
+  }
+
+  async function loadHealth() {
+    async function check(url, dotId, labelId, okText, failText) {
+      const dot   = document.getElementById(dotId);
+      const label = document.getElementById(labelId);
+      try {
+        const res  = await fetch(url);
+        const data = await res.json();
+        const ok   = data.status === 'success';
+        dot.className   = 'health-dot ' + (ok ? 'ok' : 'err');
+        label.textContent = ok ? okText : failText;
+        label.style.color = ok ? 'var(--accent2)' : 'var(--danger)';
+      } catch {
+        dot.className   = 'health-dot err';
+        label.textContent = failText;
+        label.style.color = 'var(--danger)';
+      }
+    }
+
+    await Promise.all([
+      check('/health',    'dot-api', 'label-api', 'api ✓ running',    'api ✗ unreachable'),
+      check('/health/db', 'dot-db',  'label-db',  'db ✓ connected',   'db ✗ disconnected'),
+    ]);
+  }
+
+  loadStats();
+  loadHealth();
+</script>
+{% endblock %}

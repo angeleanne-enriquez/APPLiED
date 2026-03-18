@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}About — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .about-hero {
+    text-align: center;
+    padding: 48px 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .about-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+  }
+
+  .about-title span { color: var(--accent); }
+
+  .about-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.75;
+  }
+
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .stack-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stack-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  .stack-role {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .endpoint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .endpoint-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+
+  .endpoint-row:last-child { border-bottom: none; }
+
+  .method {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .method.get  { background: rgba(78, 232, 176, 0.12); color: var(--accent2); border: 1px solid var(--accent2); }
+  .method.post { background: rgba(124, 106, 247, 0.12); color: var(--accent); border: 1px solid var(--accent); }
+
+  .endpoint-path { color: var(--text); font-family: 'DM Mono', monospace; }
+  .endpoint-desc { color: var(--muted); font-size: 0.75rem; margin-left: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="about-hero">
+    <h1 class="about-title">APP<span>L</span>iED</h1>
+    <p class="about-sub">
+      An AI-powered job tracking tool that matches your skills and resume against real listings
+      using a LangGraph agent — so you apply smarter, not harder.
+    </p>
+  </div>
+
+  <div class="section-label">tech stack</div>
+  <div class="stack-grid">
+    <div class="stack-item">
+      <span class="stack-name">Flask</span>
+      <span class="stack-role">backend API server</span>
+    </div>
+    <div class="stack-item">
+      <span class="stack-name">LangGraph</span>
+      <span class="stack-role">AI agent orchestration</span>
+    </div>
+    <div class="stack-item">
+      <span class="stack-name">PostgreSQL</span>
+      <span class="stack-role">job &amp; profile storage</span>
+    </div>
+    <div class="stack-item">
+      <span class="stack-name">Remotive API</span>
+      <span class="stack-role">remote job listings</span>
+    </div>
+    <div class="stack-item">
+      <span class="stack-name">SerpApi</span>
+      <span class="stack-role">Google Jobs scraping</span>
+    </div>
+    <div class="stack-item">
+      <span class="stack-name">Claude</span>
+      <span class="stack-role">LLM for scoring &amp; reasoning</span>
+    </div>
+  </div>
+
+  <div class="section-label">API endpoints</div>
+  <div class="card">
+    <div class="endpoint-list">
+      <div class="endpoint-row">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/health</span>
+        <span class="endpoint-desc">server &amp; db health check</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/jobs?limit=N</span>
+        <span class="endpoint-desc">list jobs from db</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/jobs/ingest</span>
+        <span class="endpoint-desc">fetch &amp; save jobs from Remotive</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/jobs/google/:user_id</span>
+        <span class="endpoint-desc">fetch Google Jobs for user preferences</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/profiles</span>
+        <span class="endpoint-desc">create or update a user profile</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/agent</span>
+        <span class="endpoint-desc">run the AI matching agent for a user</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

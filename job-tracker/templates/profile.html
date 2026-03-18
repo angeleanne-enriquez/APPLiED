@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Profile — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .resume-tabs {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .resume-tab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 7px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .resume-tab.active { background: var(--accent); color: #fff; }
+
+  .resume-pane { display: none; flex-direction: column; gap: 10px; }
+  .resume-pane.active { display: flex; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
+
+  .upload-zone input[type="file"] { display: none; }
+
+  .upload-icon { font-size: 1.8rem; }
+  .upload-label { font-size: 0.82rem; color: var(--text); }
+  .upload-sub   { font-size: 0.72rem; color: var(--muted); }
+
+  .upload-status {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: none;
+  }
+
+  .upload-status.ok  { border-color: var(--accent2); color: var(--accent2); display: block; }
+  .upload-status.err { border-color: var(--danger);  color: var(--danger);  display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div>
+    <div class="section-label">your profile — POST /profiles</div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-title">personal info</div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>first name</label>
+        <input id="p-first" type="text" placeholder="Ada" />
+      </div>
+      <div class="field">
+        <label>last name</label>
+        <input id="p-last" type="text" placeholder="Lovelace" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>email</label>
+      <input id="p-email" type="email" placeholder="ada@example.com" />
+    </div>
+
+    <div class="field">
+      <label>location</label>
+      <input id="p-location" type="text" placeholder="San Francisco, CA" />
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-title">skills &amp; preferences</div>
+
+    <div class="field">
+      <label>skills (comma-separated)</label>
+      <input id="p-skills" type="text" placeholder="python, flask, sql, react" />
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>target role / job type</label>
+        <input id="p-job-type" type="text" placeholder="software engineer, data analyst..." />
+      </div>
+      <div class="field">
+        <label>work preference</label>
+        <select id="p-work-type">
+          <option value="">— any —</option>
+          <option value="remote">remote</option>
+          <option value="hybrid">hybrid</option>
+          <option value="onsite">on-site</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-title">resume</div>
+    <div class="form-subtitle">the agent uses your resume to score job matches and tailor applications</div>
+
+    <div class="resume-tabs">
+      <button class="resume-tab active" onclick="switchResumeTab('paste', this)">paste text</button>
+      <button class="resume-tab" onclick="switchResumeTab('upload', this)">upload PDF</button>
+    </div>
+
+    <!-- Paste pane -->
+    <div class="resume-pane active" id="pane-paste">
+      <div class="field">
+        <label>resume text</label>
+        <textarea id="p-resume" rows="8" placeholder="paste your resume here — plain text or markdown works best..."></textarea>
+      </div>
+    </div>
+
+    <!-- Upload pane -->
+    <div class="resume-pane" id="pane-upload">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pdf-input').click()"
+           ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">
+        <input type="file" id="pdf-input" accept=".pdf" onchange="handleFileSelect(event)" />
+        <span class="upload-icon">📄</span>
+        <span class="upload-label">click or drag a PDF here</span>
+        <span class="upload-sub">your resume will be parsed and saved as text</span>
+      </div>
+      <div class="upload-status" id="upload-status"></div>
+      <div class="field" id="parsed-preview-field" style="display:none;">
+        <label>parsed text (editable)</label>
+        <textarea id="p-resume-parsed" rows="6" placeholder="parsed resume text will appear here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="btn" onclick="submitProfile()">save profile</button>
+    <button class="btn secondary" onclick="clearForm()">clear</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let activeResumeTab = 'paste';
+
+  function switchResumeTab(name, btn) {
+    activeResumeTab = name;
+    document.querySelectorAll('.resume-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-paste').classList.toggle('active', name === 'paste');
+    document.getElementById('pane-upload').classList.toggle('active', name === 'upload');
+  }
+
+  // ── PDF upload ──────────────────────────────────────────────────────────
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.add('drag');
+  }
+
+  function handleDragLeave() {
+    document.getElementById('upload-zone').classList.remove('drag');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+  }
+
+  async function processFile(file) {
+    const status = document.getElementById('upload-status');
+    if (!file.name.endsWith('.pdf')) {
+      status.className = 'upload-status err';
+      status.textContent = 'please upload a PDF file';
+      return;
+    }
+
+    status.className = 'upload-status';
+    status.textContent = `uploading ${file.name}...`;
+    status.style.display = 'block';
+    status.style.color = 'var(--muted)';
+    status.style.borderColor = 'var(--border)';
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const res  = await fetch('/resume/parse', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (res.ok && data.text) {
+        document.getElementById('p-resume-parsed').value = data.text;
+        document.getElementById('parsed-preview-field').style.display = 'flex';
+        status.className = 'upload-status ok';
+        status.textContent = `✓ parsed ${file.name}`;
+      } else {
+        status.className = 'upload-status err';
+        status.textContent = data.message || 'parsing failed — try the paste tab instead';
+      }
+    } catch {
+      status.className = 'upload-status err';
+      status.textContent = '/resume/parse endpoint not ready yet — use paste tab';
+    }
+  }
+
+  // ── Get resume text from whichever tab is active ─────────────────────────
+  function getResumeText() {
+    if (activeResumeTab === 'paste') {
+      return document.getElementById('p-resume').value.trim();
+    }
+    return document.getElementById('p-resume-parsed').value.trim();
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  async function submitProfile() {
+    const first    = document.getElementById('p-first').value.trim();
+    const last     = document.getElementById('p-last').value.trim();
+    const email    = document.getElementById('p-email').value.trim();
+    const location = document.getElementById('p-location').value.trim();
+    const skills   = document.getElementById('p-skills').value.trim();
+    const jobType  = document.getElementById('p-job-type').value.trim();
+    const workType = document.getElementById('p-work-type').value;
+    const resume   = getResumeText();
+
+    if (!email) { toast('email is required', true); return; }
+
+    const preferences = {};
+    if (skills)   preferences.skills    = skills.split(',').map(s => s.trim());
+    if (jobType)  preferences.job_type  = jobType;
+    if (location) preferences.location  = location;
+    if (workType) preferences.work_type = workType;
+
+    const payload = { email };
+    if (first)  payload.first_name   = first;
+    if (last)   payload.last_name    = last;
+    if (resume) payload.resume_text  = resume;
+    if (Object.keys(preferences).length) payload.preferences = preferences;
+
+    try {
+      const res  = await fetch('/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.message || 'error saving profile', true); }
+      else { toast('profile saved! user_id: ' + data.user_id); }
+    } catch {
+      toast('could not reach /profiles', true);
+    }
+  }
+
+  function clearForm() {
+    ['p-first','p-last','p-email','p-location','p-skills','p-job-type','p-resume','p-resume-parsed']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('p-work-type').value = '';
+    document.getElementById('upload-status').className = 'upload-status';
+    document.getElementById('parsed-preview-field').style.display = 'none';
+  }
+</script>
+{% endblock %}

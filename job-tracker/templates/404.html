@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}404 — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .error-wrapper {
+    min-height: calc(100vh - 65px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+  }
+
+  .error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .error-code {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 6rem;
+    letter-spacing: -0.04em;
+    color: var(--border);
+    line-height: 1;
+  }
+
+  .error-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--text);
+  }
+
+  .error-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    max-width: 360px;
+    line-height: 1.7;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-wrapper">
+  <div class="error-content">
+    <div class="error-code">404</div>
+    <div class="error-title">page not found</div>
+    <p class="error-sub">
+      the page you're looking for doesn't exist or was moved.
+      maybe the agent can help — but probably not with this one.
+    </p>
+    <div class="error-actions">
+      <a class="btn" href="/dashboard">go to dashboard</a>
+      <a class="btn secondary" href="/">go home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

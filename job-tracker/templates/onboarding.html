@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}Setup Profile — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+    width: 25%;
+  }
+
+  .step { display: none; flex-direction: column; gap: 18px; }
+  .step.active { display: flex; }
+
+  .step-header { display: flex; flex-direction: column; gap: 4px; }
+
+  .step-counter {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .step-nav {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+
+  /* resume upload */
+  .resume-tabs {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .resume-tab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 7px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .resume-tab.active { background: var(--accent); color: #fff; }
+
+  .resume-pane { display: none; flex-direction: column; gap: 10px; }
+  .resume-pane.active { display: flex; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-zone:hover { border-color: var(--accent); }
+  .upload-zone input[type="file"] { display: none; }
+
+  .upload-status {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: none;
+  }
+
+  .upload-status.ok  { border-color: var(--accent2); color: var(--accent2); display: block; }
+  .upload-status.err { border-color: var(--danger);  color: var(--danger);  display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 560px;">
+  <div>
+    <div class="form-title">let's set up your profile</div>
+    <div class="form-subtitle">helps the agent find and tailor applications for you</div>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <div class="form-card">
+
+    <!-- Step 1: Basic info -->
+    <div class="step active" id="step-1">
+      <div class="step-header">
+        <span class="step-counter">step 1 of 4 — basics</span>
+        <div class="form-title">who are you?</div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>first name</label>
+          <input type="text" id="ob-first" placeholder="Ada" />
+        </div>
+        <div class="field">
+          <label>last name</label>
+          <input type="text" id="ob-last" placeholder="Lovelace" />
+        </div>
+      </div>
+      <div class="field">
+        <label>email</label>
+        <input type="email" id="ob-email" placeholder="ada@example.com" />
+      </div>
+      <div class="field">
+        <label>location</label>
+        <input type="text" id="ob-location" placeholder="San Francisco, CA" />
+      </div>
+      <div class="step-nav">
+        <span></span>
+        <button class="btn" onclick="goStep(2)">next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Skills & preferences -->
+    <div class="step" id="step-2">
+      <div class="step-header">
+        <span class="step-counter">step 2 of 4 — skills &amp; goals</span>
+        <div class="form-title">what are you looking for?</div>
+      </div>
+      <div class="field">
+        <label>skills (comma-separated)</label>
+        <input type="text" id="ob-skills" placeholder="python, flask, sql, react, java..." />
+      </div>
+      <div class="field">
+        <label>target role / job type</label>
+        <input type="text" id="ob-job-type" placeholder="software engineer, data analyst, PM..." />
+      </div>
+      <div class="field">
+        <label>preferred work type</label>
+        <select id="ob-work-type">
+          <option value="">— any —</option>
+          <option value="remote">remote</option>
+          <option value="hybrid">hybrid</option>
+          <option value="onsite">on-site</option>
+        </select>
+      </div>
+      <div class="step-nav">
+        <button class="btn secondary" onclick="goStep(1)">← back</button>
+        <button class="btn" onclick="goStep(3)">next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Resume -->
+    <div class="step" id="step-3">
+      <div class="step-header">
+        <span class="step-counter">step 3 of 4 — resume</span>
+        <div class="form-title">add your resume</div>
+      </div>
+
+      <div class="resume-tabs">
+        <button class="resume-tab active" onclick="switchResumeTab('paste', this)">paste text</button>
+        <button class="resume-tab" onclick="switchResumeTab('upload', this)">upload PDF</button>
+      </div>
+
+      <div class="resume-pane active" id="pane-paste">
+        <div class="field">
+          <label>resume text</label>
+          <textarea id="ob-resume" rows="7" placeholder="paste your resume here — plain text or markdown..."></textarea>
+        </div>
+      </div>
+
+      <div class="resume-pane" id="pane-upload">
+        <div class="upload-zone" onclick="document.getElementById('ob-pdf-input').click()"
+             ondragover="event.preventDefault()" ondrop="handleObDrop(event)">
+          <input type="file" id="ob-pdf-input" accept=".pdf" onchange="handleObFileSelect(event)" />
+          <span style="font-size:1.6rem;">📄</span>
+          <span style="font-size:0.82rem; color:var(--text);">click or drag a PDF here</span>
+          <span style="font-size:0.72rem; color:var(--muted);">will be parsed into text</span>
+        </div>
+        <div class="upload-status" id="ob-upload-status"></div>
+        <div class="field" id="ob-parsed-field" style="display:none;">
+          <label>parsed text (editable)</label>
+          <textarea id="ob-resume-parsed" rows="5"></textarea>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn secondary" onclick="goStep(2)">← back</button>
+        <button class="btn" onclick="goStep(4)">next →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Review -->
+    <div class="step" id="step-4">
+      <div class="step-header">
+        <span class="step-counter">step 4 of 4 — review</span>
+        <div class="form-title">looks good?</div>
+      </div>
+      <div id="review-summary" style="font-size:0.8rem; color:var(--muted); line-height:1.8;"></div>
+      <div class="step-nav">
+        <button class="btn secondary" onclick="goStep(3)">← back</button>
+        <button class="btn" onclick="submitOnboarding()">save &amp; go to dashboard →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const stepProgress = [null, 25, 50, 75, 100];
+  let obResumeTab = 'paste';
+
+  function goStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-' + n).classList.add('active');
+    document.getElementById('progress').style.width = stepProgress[n] + '%';
+    if (n === 4) buildReview();
+  }
+
+  function switchResumeTab(name, btn) {
+    obResumeTab = name;
+    document.querySelectorAll('.resume-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-paste').classList.toggle('active', name === 'paste');
+    document.getElementById('pane-upload').classList.toggle('active', name === 'upload');
+  }
+
+  function handleObDrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) processObFile(file);
+  }
+
+  function handleObFileSelect(e) {
+    processObFile(e.target.files[0]);
+  }
+
+  async function processObFile(file) {
+    const status = document.getElementById('ob-upload-status');
+    status.className = 'upload-status';
+    status.textContent = `uploading ${file.name}...`;
+    status.style.display = 'block';
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      const res  = await fetch('/resume/parse', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.text) {
+        document.getElementById('ob-resume-parsed').value = data.text;
+        document.getElementById('ob-parsed-field').style.display = 'flex';
+        status.className = 'upload-status ok';
+        status.textContent = '✓ parsed ' + file.name;
+      } else {
+        status.className = 'upload-status err';
+        status.textContent = data.message || 'parsing failed — use paste tab instead';
+      }
+    } catch {
+      status.className = 'upload-status err';
+      status.textContent = '/resume/parse not ready — use paste tab';
+    }
+  }
+
+  function getObResume() {
+    return obResumeTab === 'paste'
+      ? document.getElementById('ob-resume').value.trim()
+      : document.getElementById('ob-resume-parsed').value.trim();
+  }
+
+  function buildReview() {
+    const first    = document.getElementById('ob-first').value.trim();
+    const last     = document.getElementById('ob-last').value.trim();
+    const email    = document.getElementById('ob-email').value.trim();
+    const location = document.getElementById('ob-location').value.trim();
+    const skills   = document.getElementById('ob-skills').value.trim();
+    const jobType  = document.getElementById('ob-job-type').value.trim();
+    const resume   = getObResume();
+
+    document.getElementById('review-summary').innerHTML = [
+      `<b>name</b>: ${first} ${last}`,
+      `<b>email</b>: ${email}`,
+      location ? `<b>location</b>: ${location}` : '',
+      skills ? `<b>skills</b>: ${skills}` : '',
+      jobType ? `<b>target role</b>: ${jobType}` : '',
+      `<b>resume</b>: ${resume ? resume.slice(0, 80) + '...' : '(none)'}`,
+    ].filter(Boolean).join('<br>');
+  }
+
+  async function submitOnboarding() {
+    const first    = document.getElementById('ob-first').value.trim();
+    const last     = document.getElementById('ob-last').value.trim();
+    const email    = document.getElementById('ob-email').value.trim();
+    const location = document.getElementById('ob-location').value.trim();
+    const skills   = document.getElementById('ob-skills').value.trim();
+    const jobType  = document.getElementById('ob-job-type').value.trim();
+    const workType = document.getElementById('ob-work-type').value;
+    const resume   = getObResume();
+
+    if (!email) { toast('email is required', true); goStep(1); return; }
+
+    const preferences = {};
+    if (skills)   preferences.skills    = skills.split(',').map(s => s.trim());
+    if (jobType)  preferences.job_type  = jobType;
+    if (location) preferences.location  = location;
+    if (workType) preferences.work_type = workType;
+
+    const payload = { email };
+    if (first)  payload.first_name  = first;
+    if (last)   payload.last_name   = last;
+    if (resume) payload.resume_text = resume;
+    if (Object.keys(preferences).length) payload.preferences = preferences;
+
+    try {
+      const res  = await fetch('/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.message || 'error saving profile', true); }
+      else {
+        toast('profile saved — heading to dashboard!');
+        setTimeout(() => window.location.href = '/dashboard', 1000);
+      }
+    } catch {
+      toast('could not reach /profiles — is the server running?', true);
+    }
+  }
+</script>
+{% endblock %}
