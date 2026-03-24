@@ -5,6 +5,7 @@ from .db import db_bp
 from .submit import submit_bp
 from .jobs import jobs_bp
 from .profiles import profiles_bp
+from .applications import applications_bp
 
 __all__ = [
     "health_bp",
@@ -12,4 +13,5 @@ __all__ = [
     "submit_bp",
     "jobs_bp",
     "profiles_bp",
+    "applications_bp",
 ]

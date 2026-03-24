@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from services.db import DATABASE_URL
 import os
 from google import genai
-GEMINI_API_KEY = "INSERT KEY HERE"
+
 
 top_n = 5  # number of jobs to return in response
 
