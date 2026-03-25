@@ -25,7 +25,23 @@ def _safe_json_loads(text: str) -> dict:
     return json.loads(cleaned)
 
 
-def _build_prompt(profile: dict, job: dict) -> str:
+def _match_context_block(match_context: dict | None) -> str:
+    if not match_context:
+        return "No stored match context was provided."
+
+    score = match_context.get("score")
+    rationale = match_context.get("rationale")
+
+    return f"""
+Match context from ranking pipeline:
+- Score: {score if score is not None else "N/A"}
+- Rationale: {rationale or "N/A"}
+
+Use this ranking context to decide what to emphasize, but do not invent any facts.
+""".strip()
+
+
+def _build_prompt(profile: dict, job: dict, match_context: dict | None = None) -> str:
     resume_text = profile.get("resume_text", "")
     preferences = profile.get("preferences_json", {}) or {}
 
@@ -48,10 +64,13 @@ Candidate resume text:
 Target job:
 {_json_pretty(job)}
 
+{_match_context_block(match_context)}
+
 Rules:
 - Resume output must stay truthful to the original resume.
 - Do not invent experience, degrees, employers, certifications, tools, or achievements.
-- Improve wording and emphasize relevant skills and experiences already present.
+- Do not transform the candidate into a different profession than what the original resume supports.
+- Use the match rationale only to prioritize emphasis, not to create new facts.
 - Cover letter should be concise, specific to the job, and professional.
 - Use markdown formatting for both outputs.
 - Do not wrap the output in markdown code fences.
@@ -85,20 +104,12 @@ def _response_schema() -> dict:
                     "key_skills_emphasized",
                 ],
                 "properties": {
-                    "job_title": {
-                        "type": "string",
-                    },
-                    "company": {
-                        "type": "string",
-                    },
-                    "match_summary": {
-                        "type": "string",
-                    },
+                    "job_title": {"type": "string"},
+                    "company": {"type": "string"},
+                    "match_summary": {"type": "string"},
                     "key_skills_emphasized": {
                         "type": "array",
-                        "items": {
-                            "type": "string",
-                        },
+                        "items": {"type": "string"},
                     },
                 },
                 "required": [
@@ -119,12 +130,16 @@ def _response_schema() -> dict:
     }
 
 
-def generate_application_packet(profile: dict, job: dict) -> dict:
+def generate_application_packet(
+    profile: dict,
+    job: dict,
+    match_context: dict | None = None,
+) -> dict:
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not set")
 
     client = genai.Client(api_key=GEMINI_API_KEY)
-    prompt = _build_prompt(profile, job)
+    prompt = _build_prompt(profile, job, match_context=match_context)
 
     response = client.models.generate_content(
         model=GEMINI_MODEL,
@@ -165,6 +180,8 @@ def generate_application_packet(profile: dict, job: dict) -> dict:
             "provider": "gemini",
             "model": GEMINI_MODEL,
         },
+        "match_score": match_context.get("score") if match_context else None,
+        "match_rationale": match_context.get("rationale") if match_context else None,
         "notes": notes,
     }
 

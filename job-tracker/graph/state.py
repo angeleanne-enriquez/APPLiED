@@ -1,32 +1,30 @@
-from typing import TypedDict, List, Dict, Optional
+from typing import TypedDict, List, Dict, Any
 
 
 class ScoredJob(TypedDict):
-    job_postings_id: str
-    score: float        # 0–100 composite score
+    job_posting_id: str
+    score: float
     rationale: str
 
 
 class AgentState(TypedDict, total=False):
-    # ── input ──────────────────────────────────────────────────────────────────
+    # input
     user_id: str
 
-    # ── loaded from DB ─────────────────────────────────────────────────────────
-    user_profile: Dict          # id, email, first_name, last_name
+    # loaded from DB
+    user_profile: Dict[str, Any]
     resume_text: str
-    major: List[str]
-    job_type: List[str]    
-    location: List[str]       # replaced preferences by these three factor to parse through easier when fetching jobs
-    resume_skills: List[str]    # pre-extracted skills from resume (set once, reused)
+    preferences: Dict[str, Any]
+    resume_skills: List[str]
 
-    # ── jobs ───────────────────────────────────────────────────────────────────
-    candidate_jobs: List[Dict]
-    jobs_list: List[Dict]       # alias kept for API compatibility
+    # jobs
+    candidate_jobs: List[Dict[str, Any]]
+    jobs_list: List[Dict[str, Any]]
 
-    # ── scoring ────────────────────────────────────────────────────────────────
+    # scoring
     scored_jobs: List[ScoredJob]
-    matched_jobs: List[ScoredJob]   # alias for scored_jobs (top-N + rest)
+    matched_jobs: List[ScoredJob]
 
-    # ── output ─────────────────────────────────────────────────────────────────
+    # output
     final_response: str
     error: str

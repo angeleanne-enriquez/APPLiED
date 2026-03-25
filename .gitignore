@@ -1,8 +1,21 @@
+# secrets
+.env
+job-tracker/.env
+*.env
+
+# python
 venv/
+.venv/
 __pycache__/
-*.pyc
-.envvenv/
-.env
-job-tracker/.env
-.env
-job-tracker/.env
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
