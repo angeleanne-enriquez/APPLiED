@@ -102,6 +102,53 @@
       margin: 0 4px;
     }
 
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 4px;
+    }
+
+    .nav-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.68rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      letter-spacing: 0;
+      flex-shrink: 0;
+    }
+
+    .nav-username {
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 90px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-signout {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-signout:hover { color: var(--danger); }
+
     main {
       flex: 1;
       position: relative;
@@ -109,13 +156,13 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1080px;
       width: 100%;
       margin: 0 auto;
-      padding: 32px;
+      padding: 40px 32px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 24px;
     }
 
     /* ─── BUTTONS ─── */
@@ -308,10 +355,16 @@
     <a class="tab {% if request.path == '/browse' %}active{% endif %}" href="/browse">jobs</a>
     <a class="tab {% if request.path == '/tailor' %}active{% endif %}" href="/tailor">tailor</a>
     <a class="tab {% if request.path == '/chat' %}active{% endif %}" href="/chat">agent</a>
-    <a class="tab {% if request.path == '/profile' %}active{% endif %}" href="/profile">profile</a>
     <div class="divider"></div>
+    <a class="tab secondary {% if request.path == '/profile' %}active{% endif %}" href="/profile">profile</a>
     <a class="tab secondary {% if request.path == '/settings' %}active{% endif %}" href="/settings">settings</a>
     <a class="tab secondary {% if request.path == '/about' %}active{% endif %}" href="/about">about</a>
+    <div class="divider"></div>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">?</div>
+      <span class="nav-username" id="nav-username">guest</span>
+      <button class="nav-signout" onclick="signOut()" title="sign out">✕</button>
+    </div>
   </nav>
 </header>
 
@@ -333,6 +386,22 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+
+  function signOut() {
+    localStorage.removeItem('applied_user');
+    window.location.href = '/login';
+  }
+
+  (function initNavUser() {
+    try {
+      const raw = localStorage.getItem('applied_user');
+      const user = raw ? JSON.parse(raw) : null;
+      const name = user?.name || 'guest';
+      const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      document.getElementById('nav-avatar').textContent = initials || '?';
+      document.getElementById('nav-username').textContent = name;
+    } catch(e) {}
+  })();
 </script>
 {% block scripts %}{% endblock %}
 

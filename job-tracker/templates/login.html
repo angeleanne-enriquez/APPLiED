@@ -75,7 +75,10 @@
   <div class="auth-card">
     <div>
       <div class="form-title">welcome back</div>
-      <div class="form-subtitle">sign in or create an account to continue</div>
+      <div class="form-subtitle" style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+        <span style="background:var(--surface2);border:1px solid var(--accent2);color:var(--accent2);font-size:0.65rem;padding:2px 7px;border-radius:4px;letter-spacing:0.06em;">dev mode</span>
+        <span>any credentials accepted</span>
+      </div>
     </div>
 
     <div class="auth-tabs">
@@ -87,15 +90,15 @@
     <form class="auth-form" id="form-login" onsubmit="handleLogin(event)">
       <div class="field">
         <label>email</label>
-        <input type="email" id="login-email" placeholder="ada@example.com" required />
+        <input type="email" id="login-email" placeholder="ada@example.com" />
       </div>
       <div class="field">
         <label>password</label>
-        <input type="password" id="login-password" placeholder="••••••••" required />
+        <input type="password" id="login-password" placeholder="anything works" />
       </div>
       <button class="btn" type="submit">sign in</button>
       <div class="auth-divider">— or —</div>
-      <a class="btn secondary" href="/dashboard" style="text-align:center">continue as guest</a>
+      <button class="btn secondary" type="button" onclick="continueAsGuest()">continue as guest</button>
     </form>
 
     <!-- Signup Form -->
@@ -103,27 +106,23 @@
       <div class="form-row">
         <div class="field">
           <label>first name</label>
-          <input type="text" id="signup-first" placeholder="Ada" required />
+          <input type="text" id="signup-first" placeholder="Ada" />
         </div>
         <div class="field">
           <label>last name</label>
-          <input type="text" id="signup-last" placeholder="Lovelace" required />
+          <input type="text" id="signup-last" placeholder="Lovelace" />
         </div>
       </div>
       <div class="field">
         <label>email</label>
-        <input type="email" id="signup-email" placeholder="ada@example.com" required />
+        <input type="email" id="signup-email" placeholder="ada@example.com" />
       </div>
       <div class="field">
         <label>password</label>
-        <input type="password" id="signup-password" placeholder="choose a password" required />
+        <input type="password" id="signup-password" placeholder="anything works" />
       </div>
       <button class="btn" type="submit">create account</button>
     </form>
-
-    <div class="auth-footer">
-      by continuing you agree to our <a href="/about">terms &amp; privacy policy</a>
-    </div>
   </div>
 </div>
 {% endblock %}
@@ -139,16 +138,25 @@
 
   function handleLogin(e) {
     e.preventDefault();
-    // TODO: wire up auth endpoint
-    toast('auth not implemented yet — redirecting to dashboard');
-    setTimeout(() => window.location.href = '/dashboard', 1000);
+    const email = document.getElementById('login-email').value.trim();
+    const name = email ? email.split('@')[0] : 'user';
+    localStorage.setItem('applied_user', JSON.stringify({ name, email, isGuest: false }));
+    window.location.href = '/dashboard';
   }
 
   function handleSignup(e) {
     e.preventDefault();
-    // TODO: wire up auth endpoint
-    toast('auth not implemented yet — redirecting to onboarding');
-    setTimeout(() => window.location.href = '/onboarding', 1000);
+    const first = document.getElementById('signup-first').value.trim() || 'user';
+    const last = document.getElementById('signup-last').value.trim() || '';
+    const email = document.getElementById('signup-email').value.trim();
+    const name = last ? `${first} ${last}` : first;
+    localStorage.setItem('applied_user', JSON.stringify({ name, email, isGuest: false }));
+    window.location.href = '/onboarding';
+  }
+
+  function continueAsGuest() {
+    localStorage.setItem('applied_user', JSON.stringify({ name: 'guest', email: '', isGuest: true }));
+    window.location.href = '/dashboard';
   }
 </script>
 {% endblock %}
