@@ -2,3 +2,14 @@ venv/
 __pycache__/
 *.pyc
 .envvenv/
+
+# local secrets
+.env
+job-tracker/.env
+
+# virtual envs
+.venv/
+job-tracker/.venv/
+
+# generated files
+job-tracker/jobs_normalized.json

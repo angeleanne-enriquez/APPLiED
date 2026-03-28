@@ -227,10 +227,19 @@ def load_jobs_node(state: AgentState) -> AgentState:
     """Load all job postings from the DB."""
     conn = get_db_connection()
     cur  = conn.cursor()
-    cur.execute("""
-        SELECT id, title, company, location, description, url, category
-        FROM job_postings
-    """)
+    cur.execute(
+    """
+    SELECT
+        id,
+        title,
+        company,
+        COALESCE(location_normalized, location) AS location,
+        description,
+        COALESCE(apply_url, url) AS url,
+        COALESCE(category, schedule_type) AS category
+    FROM job_postings
+    """
+    )
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -390,20 +399,32 @@ Scoring rubric:
 
 def persist_results_node(state: AgentState) -> AgentState:
     """Persist scored jobs to the job_matches table."""
-    user_id     = state.get("user_id")
+    user_id = state.get("user_id")
     scored_jobs = state.get("scored_jobs", [])
 
     if not user_id or not scored_jobs:
         return state
 
     conn = get_db_connection()
-    cur  = conn.cursor()
+    cur = conn.cursor()
 
     for job in scored_jobs:
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO job_matches (user_id, job_posting_id, score, rationale)
             VALUES (%s, %s, %s, %s)
-        """, (user_id, job["job_postings_id"], float(job["score"]), job["rationale"]))
+            ON CONFLICT (user_id, job_posting_id)
+            DO UPDATE SET
+                score = EXCLUDED.score,
+                rationale = EXCLUDED.rationale
+            """,
+            (
+                user_id,
+                job["job_postings_id"],
+                float(job["score"]),
+                job["rationale"],
+            ),
+        )
 
     conn.commit()
     cur.close()
