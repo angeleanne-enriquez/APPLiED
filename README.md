@@ -97,12 +97,9 @@ curl -X POST http://127.0.0.1:5001/profiles \
         "first_name": "Alex",
         "last_name": "Rivera",
         "resume_text": "Software engineer with experience in Python, APIs, and distributed systems.",
-        "preferences": {
-            "location": "Chicago",
-            "job_type": "Backend Engineer",
-            "remote": false,
-            "salary_min": 90000
-        }
+        "major": "Computer Science",
+        "job_type": "Backend Engineer",
+        "location": "Chicago"
       }'
 ```
 
