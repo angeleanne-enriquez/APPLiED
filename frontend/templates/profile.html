@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+{% block title %}Profile — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .profile-layout .full-width { grid-column: 1 / -1; }
+
+  .resume-tabs {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .resume-tab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 7px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .resume-tab.active { background: var(--accent); color: #fff; }
+
+  .resume-pane { display: none; flex-direction: column; gap: 10px; }
+  .resume-pane.active { display: flex; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
+  .upload-zone input[type="file"] { display: none; }
+
+  .upload-label { font-size: 0.82rem; color: var(--text); }
+  .upload-sub   { font-size: 0.72rem; color: var(--muted); }
+
+  .upload-status {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: none;
+  }
+
+  .upload-status.ok  { border-color: var(--accent2); color: var(--accent2); display: block; }
+  .upload-status.err { border-color: var(--danger);  color: var(--danger);  display: block; }
+
+  .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .check-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .check-pill input { display: none; }
+
+  .check-pill:has(input:checked),
+  .check-pill.checked {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(124, 106, 247, 0.1);
+  }
+
+  .field-hint {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: -2px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 860px;">
+
+  <div>
+    <div class="form-title" style="font-size:1.3rem;">your profile</div>
+    <div class="form-subtitle" style="margin-top:6px;">used by the agent to find and tailor applications for you</div>
+  </div>
+
+  <!-- ── Personal Info ── -->
+  <div class="form-card">
+    <div class="form-title">personal info</div>
+    <div class="form-row">
+      <div class="field">
+        <label>first name</label>
+        <input id="p-first" type="text" placeholder="Ada" />
+      </div>
+      <div class="field">
+        <label>last name</label>
+        <input id="p-last" type="text" placeholder="Lovelace" />
+      </div>
+    </div>
+    <div class="field">
+      <label>email <span style="color:var(--danger);font-size:0.7rem;">*</span></label>
+      <input id="p-email" type="email" placeholder="ada@example.com" />
+      <span class="field-error" id="err-p-email"></span>
+    </div>
+  </div>
+
+  <!-- ── Job Search Preferences ── -->
+  <div class="form-card">
+    <div class="form-title">job search preferences</div>
+    <div class="form-subtitle">these fields map directly to the jobs search API</div>
+
+    <div class="field">
+      <label>desired job title / search query</label>
+      <input id="p-job-query" type="text" placeholder="Software Engineer, Data Analyst, Product Manager…" />
+      <span class="field-hint">used as the primary search keyword — be specific for better matches</span>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>location</label>
+        <input id="p-location" type="text" placeholder="San Francisco, CA" />
+        <span class="field-hint">city, state, or country</span>
+      </div>
+      <div class="field">
+        <label>experience level</label>
+        <select id="p-exp-level">
+          <option value="">— any —</option>
+          <option value="intern">internship</option>
+          <option value="entry">entry / junior (0–2 yrs)</option>
+          <option value="mid">mid-level (2–5 yrs)</option>
+          <option value="senior">senior (5–8 yrs)</option>
+          <option value="staff">staff / lead (8+ yrs)</option>
+          <option value="manager">manager / director</option>
+          <option value="executive">executive / C-level</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>employment type</label>
+      <div class="checkbox-group" id="emp-type-group">
+        <label class="check-pill"><input type="checkbox" value="FULL_TIME" />full-time</label>
+        <label class="check-pill"><input type="checkbox" value="PART_TIME" />part-time</label>
+        <label class="check-pill"><input type="checkbox" value="CONTRACTOR" />contract</label>
+        <label class="check-pill"><input type="checkbox" value="INTERN" />internship</label>
+        <label class="check-pill"><input type="checkbox" value="TEMPORARY" />temporary</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>work setting</label>
+      <div class="checkbox-group" id="work-setting-group">
+        <label class="check-pill"><input type="checkbox" value="remote" />remote</label>
+        <label class="check-pill"><input type="checkbox" value="hybrid" />hybrid</label>
+        <label class="check-pill"><input type="checkbox" value="onsite" />on-site</label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>industry / domain</label>
+        <select id="p-industry">
+          <option value="">— any —</option>
+          <option value="software">software / tech</option>
+          <option value="finance">finance / fintech</option>
+          <option value="healthcare">healthcare / biotech</option>
+          <option value="education">education / edtech</option>
+          <option value="ecommerce">e-commerce / retail</option>
+          <option value="media">media / entertainment</option>
+          <option value="government">government / public sector</option>
+          <option value="nonprofit">nonprofit / NGO</option>
+          <option value="consulting">consulting</option>
+          <option value="other">other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>company size preference</label>
+        <select id="p-company-size">
+          <option value="">— any —</option>
+          <option value="startup">startup (1–50)</option>
+          <option value="small">small (51–200)</option>
+          <option value="medium">medium (201–1000)</option>
+          <option value="large">large (1000+)</option>
+          <option value="enterprise">enterprise / public</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Compensation ── -->
+  <div class="form-card">
+    <div class="form-title">compensation</div>
+    <div class="form-subtitle">optional — helps filter for relevant roles</div>
+    <div class="form-row-3">
+      <div class="field">
+        <label>min salary</label>
+        <input id="p-salary-min" type="number" placeholder="80000" min="0" />
+        <span class="field-error" id="err-p-salary-min"></span>
+      </div>
+      <div class="field">
+        <label>max salary</label>
+        <input id="p-salary-max" type="number" placeholder="140000" min="0" />
+        <span class="field-error" id="err-p-salary-max"></span>
+      </div>
+      <div class="field">
+        <label>currency</label>
+        <select id="p-currency">
+          <option value="USD">USD</option>
+          <option value="CAD">CAD</option>
+          <option value="GBP">GBP</option>
+          <option value="EUR">EUR</option>
+          <option value="AUD">AUD</option>
+          <option value="INR">INR</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Skills ── -->
+  <div class="form-card">
+    <div class="form-title">skills</div>
+    <div class="field">
+      <label>skills (comma-separated)</label>
+      <input id="p-skills" type="text" placeholder="python, flask, sql, react, machine learning…" />
+      <span class="field-hint">used for scoring job matches — list the most important ones first</span>
+    </div>
+  </div>
+
+  <!-- ── Resume ── -->
+  <div class="form-card">
+    <div class="form-title">resume</div>
+    <div class="form-subtitle">the agent uses your resume to score job matches and tailor applications</div>
+
+    <div class="resume-tabs">
+      <button class="resume-tab active" onclick="switchResumeTab('paste', this)">paste text</button>
+      <button class="resume-tab" onclick="switchResumeTab('upload', this)">upload PDF</button>
+    </div>
+
+    <div class="resume-pane active" id="pane-paste">
+      <div class="field">
+        <label>resume text</label>
+        <textarea id="p-resume" rows="9" placeholder="paste your resume here — plain text or markdown works best…"></textarea>
+      </div>
+    </div>
+
+    <div class="resume-pane" id="pane-upload">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pdf-input').click()"
+           ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">
+        <input type="file" id="pdf-input" accept=".pdf" onchange="handleFileSelect(event)" />
+        <span style="font-size:1.8rem;">📄</span>
+        <span class="upload-label">click or drag a PDF here</span>
+        <span class="upload-sub">your resume will be parsed and saved as text</span>
+      </div>
+      <div class="upload-status" id="upload-status"></div>
+      <div class="field" id="parsed-preview-field" style="display:none;">
+        <label>parsed text (editable)</label>
+        <textarea id="p-resume-parsed" rows="6" placeholder="parsed resume text will appear here…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="btn" onclick="submitProfile()">save profile</button>
+    <button class="btn secondary" onclick="clearForm()">clear</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let activeResumeTab = 'paste';
+
+  // ── attach validators on load ─────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    attachEmailValidation('p-email');
+
+    // salary: validate that both are positive and max >= min
+    ['p-salary-min', 'p-salary-max'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', validateSalary);
+      el.addEventListener('input', () => {
+        fieldReset('p-salary-min');
+        fieldReset('p-salary-max');
+      });
+    });
+  });
+
+  function validateSalary() {
+    const minVal = document.getElementById('p-salary-min').value;
+    const maxVal = document.getElementById('p-salary-max').value;
+    const min = minVal !== '' ? parseInt(minVal) : null;
+    const max = maxVal !== '' ? parseInt(maxVal) : null;
+
+    fieldReset('p-salary-min');
+    fieldReset('p-salary-max');
+
+    if (min !== null && min < 0) {
+      fieldError('p-salary-min', 'must be 0 or greater'); return false;
+    }
+    if (max !== null && max < 0) {
+      fieldError('p-salary-max', 'must be 0 or greater'); return false;
+    }
+    if (min !== null && max !== null && max < min) {
+      fieldError('p-salary-max', 'max must be greater than or equal to min'); return false;
+    }
+    return true;
+  }
+
+  // ── checkbox pills ────────────────────────────────────────────────────────
+  document.querySelectorAll('.check-pill').forEach(pill => {
+    const input = pill.querySelector('input');
+    if (!input) return;
+    input.addEventListener('change', () => {
+      pill.classList.toggle('checked', input.checked);
+    });
+  });
+
+  function getCheckedValues(groupId) {
+    return [...document.querySelectorAll(`#${groupId} input:checked`)].map(i => i.value);
+  }
+
+  // ── resume tabs ───────────────────────────────────────────────────────────
+  function switchResumeTab(name, btn) {
+    activeResumeTab = name;
+    document.querySelectorAll('.resume-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-paste').classList.toggle('active', name === 'paste');
+    document.getElementById('pane-upload').classList.toggle('active', name === 'upload');
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.add('drag');
+  }
+
+  function handleDragLeave() {
+    document.getElementById('upload-zone').classList.remove('drag');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+  }
+
+  async function processFile(file) {
+    const status = document.getElementById('upload-status');
+    if (!file.name.endsWith('.pdf')) {
+      status.className = 'upload-status err';
+      status.textContent = 'please upload a PDF file';
+      return;
+    }
+    status.className = 'upload-status';
+    status.textContent = `uploading ${file.name}…`;
+    status.style.display = 'block';
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      const res  = await fetch('/resume/parse', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.text) {
+        document.getElementById('p-resume-parsed').value = data.text;
+        document.getElementById('parsed-preview-field').style.display = 'flex';
+        status.className = 'upload-status ok';
+        status.textContent = `✓ parsed ${file.name}`;
+      } else {
+        status.className = 'upload-status err';
+        status.textContent = data.message || 'parsing failed — try the paste tab instead';
+      }
+    } catch {
+      status.className = 'upload-status err';
+      status.textContent = '/resume/parse endpoint not ready yet — use paste tab';
+    }
+  }
+
+  function getResumeText() {
+    if (activeResumeTab === 'paste') return document.getElementById('p-resume').value.trim();
+    return document.getElementById('p-resume-parsed').value.trim();
+  }
+
+  // ── submit ────────────────────────────────────────────────────────────────
+  async function submitProfile() {
+    // run all validations before touching the network
+    let valid = true;
+
+    const emailVal = document.getElementById('p-email').value.trim();
+    if (!emailVal) {
+      fieldError('p-email', 'email is required'); valid = false;
+    } else if (!isValidEmail(emailVal)) {
+      fieldError('p-email', 'enter a valid email address (e.g. ada@example.com)'); valid = false;
+    } else {
+      fieldOk('p-email');
+    }
+
+    if (!validateSalary()) valid = false;
+
+    if (!valid) {
+      // scroll to first error
+      document.querySelector('.field-error.visible')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const email = emailVal;
+
+    const empTypes    = getCheckedValues('emp-type-group');
+    const workSetting = getCheckedValues('work-setting-group');
+    const salaryMin   = document.getElementById('p-salary-min').value;
+    const salaryMax   = document.getElementById('p-salary-max').value;
+
+    const preferences = {};
+    const skills    = document.getElementById('p-skills').value.trim();
+    const jobQuery  = document.getElementById('p-job-query').value.trim();
+    const location  = document.getElementById('p-location').value.trim();
+    const expLevel  = document.getElementById('p-exp-level').value;
+    const industry  = document.getElementById('p-industry').value;
+    const coSize    = document.getElementById('p-company-size').value;
+
+    if (skills)             preferences.skills          = skills.split(',').map(s => s.trim()).filter(Boolean);
+    if (jobQuery)           preferences.job_query       = jobQuery;
+    if (location)           preferences.location        = location;
+    if (expLevel)           preferences.experience_level = expLevel;
+    if (empTypes.length)    preferences.employment_type = empTypes;
+    if (workSetting.length) preferences.work_setting    = workSetting;
+    if (industry)           preferences.industry        = industry;
+    if (coSize)             preferences.company_size    = coSize;
+    if (salaryMin || salaryMax) {
+      preferences.salary = {
+        currency: document.getElementById('p-currency').value,
+        min: salaryMin ? parseInt(salaryMin) : null,
+        max: salaryMax ? parseInt(salaryMax) : null,
+      };
+    }
+
+    const payload = { email };
+    const first  = document.getElementById('p-first').value.trim();
+    const last   = document.getElementById('p-last').value.trim();
+    const resume = getResumeText();
+
+    if (first)  payload.first_name  = first;
+    if (last)   payload.last_name   = last;
+    if (resume) payload.resume_text = resume;
+    if (Object.keys(preferences).length) payload.preferences = preferences;
+
+    try {
+      const res  = await fetch('/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.message || 'error saving profile', true); return; }
+
+      // persist user_id so other pages (dashboard, jobs) can use it
+      try {
+        const stored = JSON.parse(localStorage.getItem('applied_user') || '{}');
+        stored.user_id = data.user_id;
+        stored.email   = email;
+        if (first) stored.first = first;
+        if (last)  stored.last  = last;
+        if (first || last) stored.name = [first, last].filter(Boolean).join(' ');
+        localStorage.setItem('applied_user', JSON.stringify(stored));
+      } catch(e) {}
+
+      toast('profile saved');
+    } catch {
+      toast('could not reach /profiles', true);
+    }
+  }
+
+  function clearForm() {
+    ['p-first','p-last','p-email','p-location','p-skills',
+     'p-job-query','p-salary-min','p-salary-max','p-resume','p-resume-parsed']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; fieldReset(id); });
+    document.getElementById('p-exp-level').value = '';
+    document.getElementById('p-industry').value = '';
+    document.getElementById('p-company-size').value = '';
+    document.getElementById('p-currency').value = 'USD';
+    document.querySelectorAll('.check-pill input').forEach(i => {
+      i.checked = false;
+      i.closest('.check-pill').classList.remove('checked');
+    });
+    document.getElementById('upload-status').className = 'upload-status';
+    document.getElementById('parsed-preview-field').style.display = 'none';
+  }
+</script>
+{% endblock %}

@@ -183,45 +183,8 @@
 
   <!-- Application tracker -->
   <div class="section-label">application tracker</div>
-  <div class="tracker-board">
-    <div class="tracker-col saved">
-      <div class="tracker-col-header">
-        <span class="tracker-col-name">saved</span>
-        <span class="tracker-count">0</span>
-      </div>
-      <span class="tracker-empty">bookmark jobs from browse →</span>
-    </div>
-    <div class="tracker-col applied">
-      <div class="tracker-col-header">
-        <span class="tracker-col-name">applied</span>
-        <span class="tracker-count">0</span>
-      </div>
-      <span class="tracker-empty">no applications yet</span>
-    </div>
-    <div class="tracker-col interview">
-      <div class="tracker-col-header">
-        <span class="tracker-col-name">interview</span>
-        <span class="tracker-count">0</span>
-      </div>
-      <span class="tracker-empty">—</span>
-    </div>
-    <div class="tracker-col offer">
-      <div class="tracker-col-header">
-        <span class="tracker-col-name">offer</span>
-        <span class="tracker-count">0</span>
-      </div>
-      <span class="tracker-empty">—</span>
-    </div>
-    <div class="tracker-col rejected">
-      <div class="tracker-col-header">
-        <span class="tracker-col-name">rejected</span>
-        <span class="tracker-count">0</span>
-      </div>
-      <span class="tracker-empty">—</span>
-    </div>
-  </div>
-  <div style="font-size:0.7rem; color:var(--muted); margin-top: -8px;">
-    application tracking backend coming soon — drag-and-drop will be wired up here
+  <div class="tracker-board" id="tracker-board">
+    <!-- populated by loadApplications() -->
   </div>
 
   <!-- Health -->
@@ -243,14 +206,76 @@
 
 {% block scripts %}
 <script>
+  // ── ordered columns matching application_status enum ──────────────────────
+  const TRACKER_COLS = [
+    { key: 'saved',            label: 'saved',          cls: 'saved',     hint: 'save jobs from browse →' },
+    { key: 'drafting',         label: 'drafting',        cls: 'applied',   hint: 'agent is writing drafts' },
+    { key: 'ready_for_review', label: 'ready to review', cls: 'interview', hint: '—' },
+    { key: 'applied',          label: 'applied',         cls: 'applied',   hint: 'no applications yet' },
+    { key: 'interviewing',     label: 'interviewing',    cls: 'interview', hint: '—' },
+    { key: 'offered',          label: 'offered',         cls: 'offer',     hint: '—' },
+    { key: 'rejected',         label: 'rejected',        cls: 'rejected',  hint: '—' },
+  ];
+
+  function getUserId() {
+    try { return JSON.parse(localStorage.getItem('applied_user') || '{}').user_id || null; }
+    catch { return null; }
+  }
+
   async function loadStats() {
     try {
-      const res  = await fetch('/jobs?limit=200');
+      const res  = await fetch('/jobs?limit=1');
       const data = await res.json();
-      if (data.count !== undefined) {
-        document.getElementById('stat-jobs').textContent = data.count;
-      }
-    } catch { /* server may be offline */ }
+      if (data.count !== undefined) document.getElementById('stat-jobs').textContent = data.count;
+    } catch {}
+  }
+
+  async function loadApplications() {
+    const board  = document.getElementById('tracker-board');
+    const userId = getUserId();
+
+    // build empty columns first so the layout appears immediately
+    const grouped = {};
+    TRACKER_COLS.forEach(c => { grouped[c.key] = []; });
+
+    if (userId) {
+      try {
+        const res  = await fetch(`/applications?user_id=${userId}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          data.applications.forEach(a => {
+            if (grouped[a.status]) grouped[a.status].push(a);
+            // also update stat counters
+            if (a.status === 'applied') {
+              const el = document.getElementById('stat-applied');
+              if (el) el.textContent = (parseInt(el.textContent) || 0) + 1;
+            }
+          });
+        }
+      } catch {}
+    }
+
+    board.innerHTML = '';
+    TRACKER_COLS.forEach(col => {
+      const apps  = grouped[col.key] || [];
+      const colEl = document.createElement('div');
+      colEl.className = `tracker-col ${col.cls}`;
+      colEl.innerHTML = `
+        <div class="tracker-col-header">
+          <span class="tracker-col-name">${col.label}</span>
+          <span class="tracker-count">${apps.length}</span>
+        </div>
+        ${apps.length === 0
+          ? `<span class="tracker-empty">${col.hint}</span>`
+          : apps.map(a => `
+              <div class="tracker-chip">
+                <span>${escHtml(a.title || 'Unknown role')}</span>
+                <span class="tracker-chip-company">${escHtml(a.company || '')}</span>
+              </div>`).join('')
+        }
+      `;
+      board.appendChild(colEl);
+    });
   }
 
   async function loadHealth() {
@@ -261,23 +286,23 @@
         const res  = await fetch(url);
         const data = await res.json();
         const ok   = data.status === 'success';
-        dot.className   = 'health-dot ' + (ok ? 'ok' : 'err');
+        dot.className     = 'health-dot ' + (ok ? 'ok' : 'err');
         label.textContent = ok ? okText : failText;
         label.style.color = ok ? 'var(--accent2)' : 'var(--danger)';
       } catch {
-        dot.className   = 'health-dot err';
+        dot.className     = 'health-dot err';
         label.textContent = failText;
         label.style.color = 'var(--danger)';
       }
     }
-
     await Promise.all([
-      check('/health',    'dot-api', 'label-api', 'api ✓ running',    'api ✗ unreachable'),
-      check('/health/db', 'dot-db',  'label-db',  'db ✓ connected',   'db ✗ disconnected'),
+      check('/health',    'dot-api', 'label-api', 'api ✓ running',  'api ✗ unreachable'),
+      check('/health/db', 'dot-db',  'label-db',  'db ✓ connected', 'db ✗ disconnected'),
     ]);
   }
 
   loadStats();
+  loadApplications();
   loadHealth();
 </script>
 {% endblock %}

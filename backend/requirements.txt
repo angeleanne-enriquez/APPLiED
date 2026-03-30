@@ -5,3 +5,6 @@ requests
 langgraph
 langchain
 scikit-learn
+google-search-results
+supabase
+google-genai

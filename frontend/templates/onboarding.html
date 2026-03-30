@@ -90,6 +90,30 @@
 
   .upload-status.ok  { border-color: var(--accent2); color: var(--accent2); display: block; }
   .upload-status.err { border-color: var(--danger);  color: var(--danger);  display: block; }
+
+  .check-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .check-pill input { display: none; }
+
+  .check-pill:has(input:checked),
+  .check-pill.checked {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(124, 106, 247, 0.1);
+  }
 </style>
 {% endblock %}
 
@@ -106,30 +130,47 @@
 
   <div class="form-card">
 
-    <!-- Step 1: Basic info -->
+    <!-- Step 1: Confirm & location -->
     <div class="step active" id="step-1">
       <div class="step-header">
-        <span class="step-counter">step 1 of 4 — basics</span>
-        <div class="form-title">who are you?</div>
+        <span class="step-counter">step 1 of 4 — confirm</span>
+        <div class="form-title" id="step-1-title">almost there!</div>
       </div>
-      <div class="form-row">
-        <div class="field">
-          <label>first name</label>
-          <input type="text" id="ob-first" placeholder="Ada" />
+
+      <!-- read-only identity card, populated from localStorage -->
+      <div id="identity-card" style="
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      ">
+        <div id="ob-avatar" style="
+          width: 36px; height: 36px; border-radius: 50%;
+          background: var(--surface); border: 1px solid var(--accent);
+          color: var(--accent); font-size: 0.75rem;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; font-weight: 500;
+        ">?</div>
+        <div>
+          <div id="ob-display-name" style="font-size:0.85rem; color:var(--text);">—</div>
+          <div id="ob-display-email" style="font-size:0.72rem; color:var(--muted); margin-top:2px;">—</div>
         </div>
-        <div class="field">
-          <label>last name</label>
-          <input type="text" id="ob-last" placeholder="Lovelace" />
-        </div>
+        <a href="/login" style="margin-left:auto; font-size:0.68rem; color:var(--muted); text-decoration:none;" title="not you?">not you?</a>
       </div>
+
+      <!-- hidden inputs carry the values through to submit -->
+      <input type="hidden" id="ob-first" />
+      <input type="hidden" id="ob-last" />
+      <input type="hidden" id="ob-email" />
+
       <div class="field">
-        <label>email</label>
-        <input type="email" id="ob-email" placeholder="ada@example.com" />
-      </div>
-      <div class="field">
-        <label>location</label>
+        <label>where are you based?</label>
         <input type="text" id="ob-location" placeholder="San Francisco, CA" />
       </div>
+
       <div class="step-nav">
         <span></span>
         <button class="btn" onclick="goStep(2)">next →</button>
@@ -139,25 +180,45 @@
     <!-- Step 2: Skills & preferences -->
     <div class="step" id="step-2">
       <div class="step-header">
-        <span class="step-counter">step 2 of 4 — skills &amp; goals</span>
+        <span class="step-counter">step 2 of 4 — job preferences</span>
         <div class="form-title">what are you looking for?</div>
       </div>
       <div class="field">
-        <label>skills (comma-separated)</label>
-        <input type="text" id="ob-skills" placeholder="python, flask, sql, react, java..." />
+        <label>desired job title / search query</label>
+        <input type="text" id="ob-job-query" placeholder="software engineer, data analyst, PM…" />
       </div>
       <div class="field">
-        <label>target role / job type</label>
-        <input type="text" id="ob-job-type" placeholder="software engineer, data analyst, PM..." />
-      </div>
-      <div class="field">
-        <label>preferred work type</label>
-        <select id="ob-work-type">
+        <label>experience level</label>
+        <select id="ob-exp-level">
           <option value="">— any —</option>
-          <option value="remote">remote</option>
-          <option value="hybrid">hybrid</option>
-          <option value="onsite">on-site</option>
+          <option value="intern">internship</option>
+          <option value="entry">entry / junior (0–2 yrs)</option>
+          <option value="mid">mid-level (2–5 yrs)</option>
+          <option value="senior">senior (5–8 yrs)</option>
+          <option value="staff">staff / lead (8+ yrs)</option>
+          <option value="manager">manager / director</option>
         </select>
+      </div>
+      <div class="field">
+        <label>employment type</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;" id="ob-emp-type">
+          <label class="check-pill"><input type="checkbox" value="FULL_TIME" />full-time</label>
+          <label class="check-pill"><input type="checkbox" value="PART_TIME" />part-time</label>
+          <label class="check-pill"><input type="checkbox" value="CONTRACTOR" />contract</label>
+          <label class="check-pill"><input type="checkbox" value="INTERN" />internship</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>work setting</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;" id="ob-work-setting">
+          <label class="check-pill"><input type="checkbox" value="remote" />remote</label>
+          <label class="check-pill"><input type="checkbox" value="hybrid" />hybrid</label>
+          <label class="check-pill"><input type="checkbox" value="onsite" />on-site</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>skills (comma-separated)</label>
+        <input type="text" id="ob-skills" placeholder="python, flask, sql, react, java…" />
       </div>
       <div class="step-nav">
         <button class="btn secondary" onclick="goStep(1)">← back</button>
@@ -227,6 +288,44 @@
   const stepProgress = [null, 25, 50, 75, 100];
   let obResumeTab = 'paste';
 
+  // ── populate identity card from signup ───────────────────────────────────
+  (function prefillFromAuth() {
+    try {
+      const raw = localStorage.getItem('applied_user');
+      const user = raw ? JSON.parse(raw) : {};
+
+      const first = user.first || '';
+      const last  = user.last  || '';
+      const email = user.email || '';
+      const name  = user.name  || [first, last].filter(Boolean).join(' ') || 'user';
+
+      // populate hidden inputs (used by submit)
+      document.getElementById('ob-first').value = first;
+      document.getElementById('ob-last').value  = last;
+      document.getElementById('ob-email').value = email;
+
+      // populate the visible identity card
+      const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      document.getElementById('ob-avatar').textContent       = initials || '?';
+      document.getElementById('ob-display-name').textContent = name;
+      document.getElementById('ob-display-email').textContent = email || 'no email set';
+
+      if (first) {
+        document.getElementById('step-1-title').textContent = `hey ${first}!`;
+      }
+    } catch(e) {}
+  })();
+
+  document.querySelectorAll('.check-pill').forEach(pill => {
+    const input = pill.querySelector('input');
+    if (!input) return;
+    input.addEventListener('change', () => pill.classList.toggle('checked', input.checked));
+  });
+
+  function getCheckedValues(groupId) {
+    return [...document.querySelectorAll(`#${groupId} input:checked`)].map(i => i.value);
+  }
+
   function goStep(n) {
     document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
     document.getElementById('step-' + n).classList.add('active');
@@ -290,16 +389,22 @@
     const email    = document.getElementById('ob-email').value.trim();
     const location = document.getElementById('ob-location').value.trim();
     const skills   = document.getElementById('ob-skills').value.trim();
-    const jobType  = document.getElementById('ob-job-type').value.trim();
+    const jobQuery = document.getElementById('ob-job-query').value.trim();
+    const expLevel = document.getElementById('ob-exp-level').value;
+    const empTypes = getCheckedValues('ob-emp-type').join(', ');
+    const workSetting = getCheckedValues('ob-work-setting').join(', ');
     const resume   = getObResume();
 
     document.getElementById('review-summary').innerHTML = [
       `<b>name</b>: ${first} ${last}`,
       `<b>email</b>: ${email}`,
-      location ? `<b>location</b>: ${location}` : '',
-      skills ? `<b>skills</b>: ${skills}` : '',
-      jobType ? `<b>target role</b>: ${jobType}` : '',
-      `<b>resume</b>: ${resume ? resume.slice(0, 80) + '...' : '(none)'}`,
+      location    ? `<b>location</b>: ${location}` : '',
+      jobQuery    ? `<b>desired role</b>: ${jobQuery}` : '',
+      expLevel    ? `<b>experience</b>: ${expLevel}` : '',
+      empTypes    ? `<b>employment type</b>: ${empTypes}` : '',
+      workSetting ? `<b>work setting</b>: ${workSetting}` : '',
+      skills      ? `<b>skills</b>: ${skills}` : '',
+      `<b>resume</b>: ${resume ? resume.slice(0, 80) + '…' : '(none)'}`,
     ].filter(Boolean).join('<br>');
   }
 
@@ -309,17 +414,21 @@
     const email    = document.getElementById('ob-email').value.trim();
     const location = document.getElementById('ob-location').value.trim();
     const skills   = document.getElementById('ob-skills').value.trim();
-    const jobType  = document.getElementById('ob-job-type').value.trim();
-    const workType = document.getElementById('ob-work-type').value;
+    const jobQuery = document.getElementById('ob-job-query').value.trim();
+    const expLevel = document.getElementById('ob-exp-level').value;
+    const empTypes = getCheckedValues('ob-emp-type');
+    const workSetting = getCheckedValues('ob-work-setting');
     const resume   = getObResume();
 
     if (!email) { toast('email is required', true); goStep(1); return; }
 
     const preferences = {};
-    if (skills)   preferences.skills    = skills.split(',').map(s => s.trim());
-    if (jobType)  preferences.job_type  = jobType;
-    if (location) preferences.location  = location;
-    if (workType) preferences.work_type = workType;
+    if (skills)           preferences.skills           = skills.split(',').map(s => s.trim()).filter(Boolean);
+    if (jobQuery)         preferences.job_query        = jobQuery;
+    if (location)         preferences.location         = location;
+    if (expLevel)         preferences.experience_level = expLevel;
+    if (empTypes.length)  preferences.employment_type  = empTypes;
+    if (workSetting.length) preferences.work_setting   = workSetting;
 
     const payload = { email };
     if (first)  payload.first_name  = first;
@@ -334,11 +443,17 @@
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) { toast(data.message || 'error saving profile', true); }
-      else {
-        toast('profile saved — heading to dashboard!');
-        setTimeout(() => window.location.href = '/dashboard', 1000);
-      }
+      if (!res.ok) { toast(data.message || 'error saving profile', true); return; }
+
+      // persist user_id for all other pages
+      try {
+        const stored = JSON.parse(localStorage.getItem('applied_user') || '{}');
+        stored.user_id = data.user_id;
+        localStorage.setItem('applied_user', JSON.stringify(stored));
+      } catch(e) {}
+
+      toast('profile saved — heading to dashboard!');
+      setTimeout(() => window.location.href = '/dashboard', 1000);
     } catch {
       toast('could not reach /profiles — is the server running?', true);
     }

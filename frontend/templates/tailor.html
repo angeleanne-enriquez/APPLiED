@@ -154,9 +154,8 @@
         <textarea id="t-jd" rows="10" placeholder="paste the full job description here...&#10;&#10;the agent will read this and tailor your resume + cover letter accordingly."></textarea>
       </div>
 
-      <div class="field">
-        <label>your user ID (for resume lookup)</label>
-        <input id="t-userid" type="text" placeholder="from your profile save response" />
+      <div id="no-profile-warning" style="display:none; font-size:0.72rem; color:var(--danger); padding:8px 12px; border:1px solid var(--danger); border-radius:7px;">
+        ⚠ no profile found — <a href="/profile" style="color:var(--danger);">save your profile first</a> so the agent knows who you are
       </div>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -253,14 +252,27 @@
     }
   }
 
+  function getUserId() {
+    try { return JSON.parse(localStorage.getItem('applied_user') || '{}').user_id || null; }
+    catch { return null; }
+  }
+
+  // show warning if no user_id found
+  (function checkProfile() {
+    if (!getUserId()) {
+      document.getElementById('no-profile-warning').style.display = 'block';
+      document.querySelectorAll('.tailor-grid .btn').forEach(b => b.disabled = true);
+    }
+  })();
+
   async function callTailor(mode) {
-    const userId = document.getElementById('t-userid').value.trim();
-    const jd     = document.getElementById('t-jd').value.trim();
-    const title  = document.getElementById('t-title').value.trim();
+    const userId  = getUserId();
+    const jd      = document.getElementById('t-jd').value.trim();
+    const title   = document.getElementById('t-title').value.trim();
     const company = document.getElementById('t-company').value.trim();
 
+    if (!userId) { toast('save your profile first', true); return; }
     if (!jd) { toast('paste a job description first', true); return; }
-    if (!userId) { toast('enter your user_id (from profile save)', true); return; }
 
     const labels = { both: 'tailoring resume + cover letter...', resume: 'tailoring resume...', cover: 'writing cover letter...' };
     setGenerating(true, labels[mode] || 'working...');
@@ -269,7 +281,7 @@
       const res  = await fetch('/tailor/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, job_description: jd, job_title: title, company, mode })
+        body: JSON.stringify({ user_id: userId, job_description: jd, job_title: title, company: company, mode })
       });
       const data = await res.json();
       setGenerating(false);
@@ -287,7 +299,7 @@
 
     } catch {
       setGenerating(false);
-      toast('could not reach /tailor/generate — backend not yet implemented', true);
+      toast('could not reach /tailor/generate — is the server running?', true);
     }
   }
 
@@ -310,10 +322,12 @@
     URL.revokeObjectURL(a.href);
   }
 
-  // Pre-fill from URL params (jobs.html links here with ?job_id=...)
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('title'))   document.getElementById('t-title').value   = params.get('title');
-  if (params.get('company')) document.getElementById('t-company').value = params.get('company');
-  if (params.get('jd'))      document.getElementById('t-jd').value      = params.get('jd');
+  // Pre-fill from URL params (jobs.html links here with ?title=...&company=...)
+  (function prefillFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('title'))   document.getElementById('t-title').value   = params.get('title');
+    if (params.get('company')) document.getElementById('t-company').value = params.get('company');
+    if (params.get('jd'))      document.getElementById('t-jd').value      = params.get('jd');
+  })();
 </script>
 {% endblock %}

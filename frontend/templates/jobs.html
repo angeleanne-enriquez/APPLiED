@@ -66,10 +66,25 @@
     font-size: 0.72rem;
     color: var(--muted);
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-top: 6px;
+    margin-top: 8px;
+    align-items: center;
   }
+
+  .job-badge {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .job-badge.remote { border-color: var(--accent2); color: var(--accent2); }
+  .job-badge.hybrid { border-color: #f7a84a; color: #f7a84a; }
+  .job-badge.salary { border-color: var(--border); color: var(--text); }
 
   .job-actions {
     display: flex;
@@ -78,10 +93,16 @@
     align-items: flex-end;
   }
 
-  .job-actions a, .job-actions button {
+  .job-actions a,
+  .job-actions button {
     font-size: 0.7rem;
     padding: 5px 11px;
     border-radius: 5px;
+  }
+
+  .save-btn.saved {
+    border-color: var(--accent2) !important;
+    color: var(--accent2) !important;
   }
 </style>
 {% endblock %}
@@ -89,11 +110,11 @@
 {% block content %}
 <div class="container">
   <div>
-    <div class="section-label">job listings — GET /jobs</div>
+    <div class="section-label">job listings</div>
   </div>
 
   <div class="jobs-toolbar">
-    <input id="search-input" type="text" placeholder="filter by title, company, location, category..." oninput="filterJobs()" />
+    <input id="search-input" type="text" placeholder="filter by title, company, location…" oninput="filterJobs()" />
     <button class="btn" onclick="fetchJobs()">load jobs</button>
     <button class="btn secondary" onclick="ingestJobs()">ingest new</button>
     <span id="jobs-status" style="font-size:0.75rem; color:var(--muted);"></span>
@@ -108,11 +129,17 @@
 {% block scripts %}
 <script>
   let allJobs = [];
+  let savedJobIds = new Set();
+
+  function getUserId() {
+    try { return JSON.parse(localStorage.getItem('applied_user') || '{}').user_id || null; }
+    catch { return null; }
+  }
 
   async function fetchJobs() {
     const grid   = document.getElementById('jobs-grid');
     const status = document.getElementById('jobs-status');
-    grid.innerHTML = '<div class="empty-state">loading...</div>';
+    grid.innerHTML = '<div class="empty-state">loading…</div>';
     status.textContent = '';
 
     try {
@@ -125,6 +152,7 @@
         return;
       }
 
+      await loadSavedJobs();
       status.textContent = allJobs.length + ' listings';
       renderJobs(allJobs);
     } catch {
@@ -132,8 +160,47 @@
     }
   }
 
+  async function loadSavedJobs() {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+      const res  = await fetch(`/applications?user_id=${userId}`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        savedJobIds = new Set(data.applications.map(a => a.job_posting_id));
+      }
+    } catch { /* non-critical */ }
+  }
+
+  async function saveJob(jobId, btn) {
+    const userId = getUserId();
+    if (!userId) {
+      toast('complete your profile first to track jobs', true);
+      return;
+    }
+    try {
+      const res  = await fetch('/applications/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, job_posting_id: jobId }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        savedJobIds.add(jobId);
+        btn.textContent = '✓ saved';
+        btn.classList.add('saved');
+        btn.disabled = true;
+        toast('job saved to your tracker');
+      } else {
+        toast(data.message || 'could not save job', true);
+      }
+    } catch {
+      toast('could not reach /applications/save', true);
+    }
+  }
+
   async function ingestJobs() {
-    toast('fetching from Remotive...');
+    toast('fetching from Remotive…');
     try {
       const res  = await fetch('/jobs/ingest', {
         method: 'POST',
@@ -157,21 +224,24 @@
     if (!allJobs.length) return;
     const filtered = q
       ? allJobs.filter(j =>
-          (j.title    || '').toLowerCase().includes(q) ||
-          (j.company  || '').toLowerCase().includes(q) ||
-          (j.location || '').toLowerCase().includes(q) ||
-          (j.category || '').toLowerCase().includes(q)
+          (j.title       || '').toLowerCase().includes(q) ||
+          (j.company     || '').toLowerCase().includes(q) ||
+          (j.location    || '').toLowerCase().includes(q) ||
+          (j.category    || '').toLowerCase().includes(q) ||
+          (j.remote_type || '').toLowerCase().includes(q)
         )
       : allJobs;
     document.getElementById('jobs-status').textContent = filtered.length + ' listings';
     renderJobs(filtered);
   }
 
-  function buildTailorUrl(job) {
-    const p = new URLSearchParams();
-    if (job.title)   p.set('title',   job.title);
-    if (job.company) p.set('company', job.company);
-    return '/tailor?' + p.toString();
+  function remoteTypeBadge(job) {
+    const rt = (job.remote_type || '').toLowerCase();
+    if (!rt || rt === 'unknown') {
+      return job.is_remote ? '<span class="job-badge remote">remote</span>' : '';
+    }
+    const cls = rt === 'remote' ? 'remote' : rt === 'hybrid' ? 'hybrid' : '';
+    return `<span class="job-badge ${cls}">${escHtml(rt)}</span>`;
   }
 
   function renderJobs(jobs) {
@@ -182,23 +252,36 @@
       card.className = 'job-card';
       card.style.animationDelay = (i * 0.03) + 's';
 
-      const tailorUrl = buildTailorUrl(job);
+      const isSaved  = savedJobIds.has(job.id);
+      const applyUrl = job.apply_url || job.url || '';
 
       card.innerHTML = `
         <div>
           <div class="job-title">${escHtml(job.title || 'Untitled')}</div>
           <div class="job-company">${escHtml(job.company || '')}</div>
           <div class="job-meta">
-            ${job.location ? `<span>${escHtml(job.location)}</span>` : ''}
-            ${job.category ? `<span>${escHtml(job.category)}</span>` : ''}
-            ${job.source   ? `<span>${escHtml(job.source)}</span>`   : ''}
+            ${job.location_normalized || job.location
+              ? `<span>${escHtml(job.location_normalized || job.location)}</span>` : ''}
+            ${remoteTypeBadge(job)}
+            ${job.schedule_type
+              ? `<span class="job-badge">${escHtml(job.schedule_type)}</span>` : ''}
+            ${job.salary_text
+              ? `<span class="job-badge salary">${escHtml(job.salary_text)}</span>` : ''}
+            ${job.category
+              ? `<span>${escHtml(job.category)}</span>` : ''}
           </div>
         </div>
         <div class="job-actions">
-          <a class="btn" href="${escHtml(tailorUrl)}">tailor →</a>
-          ${job.url
-            ? `<a class="btn ghost" href="${escHtml(job.url)}" target="_blank" rel="noopener">view listing</a>`
+          <a class="btn" href="/tailor?title=${encodeURIComponent(job.title||'')}&company=${encodeURIComponent(job.company||'')}">tailor →</a>
+          ${applyUrl
+            ? `<a class="btn secondary" href="${escHtml(applyUrl)}" target="_blank" rel="noopener">apply</a>`
             : ''}
+          <button
+            class="btn ghost save-btn${isSaved ? ' saved' : ''}"
+            onclick="saveJob('${escHtml(job.id)}', this)"
+            ${isSaved ? 'disabled' : ''}>
+            ${isSaved ? '✓ saved' : 'save'}
+          </button>
         </div>
       `;
       grid.appendChild(card);
