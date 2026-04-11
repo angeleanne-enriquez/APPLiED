@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Interview Prep</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='interview_prep.css') }}">
+</head>
+<body data-page="interview-prep"
+      data-user-id="{{ user_id }}"
+      data-job-posting-id="{{ job_posting_id }}">
+    <main class="page-shell">
+        <header class="page-header">
+            <p class="eyebrow">APPLiED</p>
+            <h1>Interview Prep</h1>
+            <p>Review the brief, generate questions, and practice with a text interviewer plus browser voice.</p>
+            <a class="text-link" href="{{ url_for('interview_prep.demo_applications_page') }}">Back to applications</a>
+        </header>
+
+        <section class="prep-controls" aria-label="Prep target">
+            <label for="prepUserId">User ID</label>
+            <input id="prepUserId" value="{{ user_id }}" placeholder="Required">
+            <label for="prepJobId">Job Posting ID</label>
+            <input id="prepJobId" value="{{ job_posting_id }}" placeholder="Required">
+            <button type="button" id="loadBrief">Load Brief</button>
+            <button type="button" id="refreshBrief" class="secondary">Refresh Research</button>
+        </section>
+
+        <p id="prepStatus" class="notice" aria-live="polite"></p>
+
+        <section class="two-column">
+            <div class="panel">
+                <div class="section-heading">
+                    <h2>Brief</h2>
+                    <span id="researchMode" class="pill"></span>
+                </div>
+                <div id="briefOutput" class="content-block"></div>
+                <div id="sourcesOutput" class="source-list"></div>
+            </div>
+
+            <div class="panel">
+                <div class="section-heading">
+                    <h2>Mock Questions</h2>
+                    <button type="button" id="generateQuestions" class="secondary">Generate</button>
+                </div>
+                <input id="questionFocus" placeholder="Optional focus, like systems design or behavioral">
+                <div id="questionsOutput" class="content-block"></div>
+            </div>
+        </section>
+
+        <section class="practice-area" aria-label="Practice session">
+            <div class="section-heading">
+                <h2>Practice</h2>
+                <div class="inline-actions">
+                    <button type="button" id="startSession">Start Session</button>
+                    <button type="button" id="getFeedback" class="secondary">Get Feedback</button>
+                    <button type="button" id="endSession" class="secondary">End Session</button>
+                </div>
+            </div>
+
+            <div class="voice-row">
+                <button type="button" id="startVoice" class="secondary">Start Voice</button>
+                <button type="button" id="stopVoice" class="secondary">Stop Voice</button>
+                <label class="check-label">
+                    <input type="checkbox" id="speakReplies" checked>
+                    Speak replies
+                </label>
+                <span id="voiceStatus" class="muted"></span>
+            </div>
+
+            <div id="conversationOutput" class="conversation" aria-live="polite"></div>
+
+            <label for="answerInput">Your answer</label>
+            <textarea id="answerInput" rows="5" placeholder="Type or dictate your answer"></textarea>
+            <p id="liveTranscript" class="muted"></p>
+            <button type="button" id="sendAnswer">Send Answer</button>
+
+            <div id="feedbackOutput" class="content-block"></div>
+        </section>
+
+        <section class="panel" aria-label="Session history">
+            <div class="section-heading">
+                <h2>Session History</h2>
+                <button type="button" id="loadSessions" class="secondary">Reload</button>
+            </div>
+            <div id="sessionsOutput" class="session-list"></div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='interview_prep.js') }}"></script>
+</body>
+</html>

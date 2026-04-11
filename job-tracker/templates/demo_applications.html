@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Applications Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='interview_prep.css') }}">
+</head>
+<body data-page="applications">
+    <main class="page-shell">
+        <header class="page-header">
+            <p class="eyebrow">APPLiED</p>
+            <h1>Applications</h1>
+            <p>Mark a saved application as interviewing and open its prep workspace.</p>
+        </header>
+
+        <form class="filter-row" method="get" action="{{ url_for('interview_prep.demo_applications_page') }}">
+            <label for="user_id">User ID</label>
+            <input id="user_id" name="user_id" value="{{ user_id }}" placeholder="Optional user filter">
+            <button type="submit">Filter</button>
+        </form>
+
+        {% if error %}
+            <p class="notice error">{{ error }}</p>
+        {% endif %}
+
+        <section class="stack" aria-label="Applications">
+            {% if applications %}
+                {% for app in applications %}
+                    <article class="application-row"
+                             data-user-id="{{ app.user_id }}"
+                             data-job-posting-id="{{ app.job_posting_id }}"
+                             data-application-id="{{ app.application_id }}">
+                        <div>
+                            <p class="eyebrow">{{ app.company or "Company" }}</p>
+                            <h2>{{ app.title or "Untitled role" }}</h2>
+                            <p>{{ app.location or "Location not listed" }}</p>
+                            <p class="muted">Status: <strong>{{ app.status }}</strong> - {{ app.email }}</p>
+                        </div>
+                        <div class="row-actions">
+                            <button type="button" class="js-got-interview">Got Interview</button>
+                            <a class="button secondary"
+                               href="{{ url_for('interview_prep.interview_prep_page', user_id=app.user_id, job_posting_id=app.job_posting_id) }}">
+                                Open Prep
+                            </a>
+                            <p class="row-status" aria-live="polite"></p>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p class="notice">No saved applications found. Run the demo seed script or create an application draft first.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='interview_prep.js') }}"></script>
+</body>
+</html>

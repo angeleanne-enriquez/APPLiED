@@ -7,6 +7,7 @@ from services import (
     jobs_bp,
     profiles_bp,
     applications_bp,
+    interview_prep_bp,
 )
 from services.agent import run_agent_for_user
 
@@ -18,6 +19,7 @@ app.register_blueprint(submit_bp)
 app.register_blueprint(jobs_bp)
 app.register_blueprint(profiles_bp)
 app.register_blueprint(applications_bp)
+app.register_blueprint(interview_prep_bp)
 
 @app.route('/agent', methods=['POST'])
 def run_agent():

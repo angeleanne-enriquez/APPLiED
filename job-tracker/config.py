@@ -10,3 +10,14 @@ SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY")
 SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "application-drafts")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY") or os.getenv("SERPAPI_KEY")
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+INTERVIEW_RESEARCH_MAX_RESULTS = _env_int("INTERVIEW_RESEARCH_MAX_RESULTS", 6)
