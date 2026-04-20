@@ -109,14 +109,13 @@ Return a JSON object with exactly these keys:
 }}
 
 Output valid JSON only — no markdown, no code fences."""
-
     try:
-        res  = _gemini().models.generate_content(
+        client = _gemini()
+        res = client.models.generate_content(
             model=config.GEMINI_MODEL,
             contents=prompt,
         )
         text = _strip_fences(res.text or "")
-        # try direct parse, then regex fallback
         try:
             payload = json.loads(text)
         except json.JSONDecodeError:
