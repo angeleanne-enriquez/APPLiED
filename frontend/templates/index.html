@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}APPLiED — AI Job Tracker for Students{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hero {
+    min-height: calc(100vh - 65px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px 32px;
+    gap: 22px;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    padding: 4px 14px;
+    border-radius: 99px;
+    opacity: 0.8;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    max-width: 640px;
+  }
+
+  .hero-title span { color: var(--accent); }
+
+  .hero-sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    max-width: 500px;
+    line-height: 1.8;
+  }
+
+  .hero-sub b { color: var(--text); }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  /* flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    padding: 0 32px 64px;
+    max-width: 900px;
+    margin: 32px auto 0;
+  }
+
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 140px;
+    text-align: center;
+    transition: border-color 0.15s;
+    animation: fadeIn 0.3s ease both;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .flow-step:hover { border-color: var(--accent); }
+  .flow-step:nth-child(3) { animation-delay: 0.08s; }
+  .flow-step:nth-child(5) { animation-delay: 0.16s; }
+  .flow-step:nth-child(7) { animation-delay: 0.24s; }
+  .flow-step:nth-child(9) { animation-delay: 0.32s; }
+
+  .flow-icon { font-size: 1.5rem; }
+
+  .flow-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+
+  .flow-desc {
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .flow-arrow {
+    font-size: 1.2rem;
+    color: var(--border);
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .tagline {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    padding-bottom: 32px;
+  }
+
+  .tagline b { color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <span class="hero-eyebrow">built for students · powered by AI</span>
+  <h1 class="hero-title">
+    Stop scrolling.<br>
+    Start <span>applying</span><br>
+    with an edge.
+  </h1>
+  <p class="hero-sub">
+    You're juggling classes, clubs, and everything else —
+    <b>APPLiED</b> finds jobs that fit your skills,
+    tailors your resume for each one, and tracks every application in one place.
+    No spreadsheet, no stress.
+  </p>
+  <div class="hero-actions">
+    <a class="btn" href="/onboarding">set up my profile</a>
+    <a class="btn secondary" href="/browse">browse jobs</a>
+    <a class="btn ghost" href="/about">how it works</a>
+  </div>
+</div>
+
+<!-- How it works flow -->
+<div class="flow">
+  <a class="flow-step" href="/onboarding">
+    <span class="flow-icon">📋</span>
+    <span class="flow-name">1. add resume</span>
+    <span class="flow-desc">paste or upload your resume + skills</span>
+  </a>
+  <span class="flow-arrow">→</span>
+  <a class="flow-step" href="/browse">
+    <span class="flow-icon">🔍</span>
+    <span class="flow-name">2. browse jobs</span>
+    <span class="flow-desc">real listings from Remotive &amp; Google Jobs</span>
+  </a>
+  <span class="flow-arrow">→</span>
+  <a class="flow-step" href="/chat">
+    <span class="flow-icon">⚡</span>
+    <span class="flow-name">3. run agent</span>
+    <span class="flow-desc">AI scores &amp; ranks jobs against your profile</span>
+  </a>
+  <span class="flow-arrow">→</span>
+  <a class="flow-step" href="/tailor">
+    <span class="flow-icon">✍️</span>
+    <span class="flow-name">4. tailor &amp; apply</span>
+    <span class="flow-desc">get a custom resume + cover letter per job</span>
+  </a>
+  <span class="flow-arrow">→</span>
+  <a class="flow-step" href="/dashboard">
+    <span class="flow-icon">📊</span>
+    <span class="flow-name">5. track it all</span>
+    <span class="flow-desc">one dashboard for every application</span>
+  </a>
+</div>
+
+<div class="tagline">
+  built by students · for students who are <b>done</b> losing track of applications
+</div>
+{% endblock %}

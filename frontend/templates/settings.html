@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Settings — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .setting-row:last-child { border-bottom: none; }
+
+  .setting-info { display: flex; flex-direction: column; gap: 3px; }
+  .setting-name { font-size: 0.85rem; color: var(--text); }
+  .setting-desc { font-size: 0.72rem; color: var(--muted); }
+
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 99px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: var(--muted);
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(16px); background: #fff; }
+
+  .danger-zone {
+    border-color: var(--danger) !important;
+  }
+
+  .danger-zone .form-title { color: var(--danger); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div>
+    <div class="section-label">settings</div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="form-card">
+    <div class="form-title">notifications</div>
+    <div class="settings-section">
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-name">email alerts</span>
+          <span class="setting-desc">get notified when new jobs match your profile</span>
+        </div>
+        <button class="toggle" onclick="this.classList.toggle('on')"></button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-name">agent run summary</span>
+          <span class="setting-desc">receive a digest after each agent run</span>
+        </div>
+        <button class="toggle" onclick="this.classList.toggle('on')"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent config -->
+  <div class="form-card">
+    <div class="form-title">agent configuration</div>
+    <div class="field">
+      <label>max results per run</label>
+      <input type="number" placeholder="10" min="1" max="50" />
+    </div>
+    <div class="field">
+      <label>minimum match score (0–100)</label>
+      <input type="number" placeholder="60" min="0" max="100" />
+    </div>
+    <div class="field">
+      <label>default job source</label>
+      <select>
+        <option value="remotive">Remotive</option>
+        <option value="google">Google Jobs</option>
+        <option value="both">Both</option>
+      </select>
+    </div>
+    <button class="btn secondary" onclick="toast('settings not wired up yet')">save preferences</button>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="form-card danger-zone">
+    <div class="form-title">danger zone</div>
+    <div class="settings-section">
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-name">delete profile</span>
+          <span class="setting-desc">permanently remove your profile and all data</span>
+        </div>
+        <button class="btn secondary" style="border-color:var(--danger); color:var(--danger);" onclick="toast('not implemented yet')">delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

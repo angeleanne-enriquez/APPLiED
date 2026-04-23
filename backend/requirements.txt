@@ -1,0 +1,11 @@
+flask
+gunicorn
+python-dotenv
+psycopg2-binary
+requests
+langgraph
+langchain
+scikit-learn
+google-search-results
+supabase
+google-genai

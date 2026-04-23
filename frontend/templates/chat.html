@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% block title %}Agent — APPLiED{% endblock %}
+
+{% block extra_css %}
+<style>
+  .agent-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ─── RUN PANEL ─── */
+  .run-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .agent-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .status-dot.running { background: #f7a84a; box-shadow: 0 0 8px #f7a84a; animation: pulse 1s infinite; }
+  .status-dot.done    { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .status-dot.error   { background: var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  .status-text {
+    font-size: 0.78rem;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  /* ─── USER ID FIELD ─── */
+  .uid-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .uid-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .uid-row input:focus { border-color: var(--accent); color: var(--text); }
+
+  /* ─── LOG ─── */
+  .agent-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 220px;
+    max-height: 420px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+
+  .log-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .log-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .log-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .log-bubble.user   { background: var(--accent); color: #fff; border-color: var(--accent); align-self: flex-end; max-width: 80%; }
+  .log-bubble.error  { border-color: var(--danger); color: var(--danger); }
+  .log-bubble.success { border-color: var(--accent2); }
+
+  /* ─── RESULTS PANEL ─── */
+  .results-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .match-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: fadeIn 0.2s ease both;
+    transition: border-color 0.15s;
+  }
+
+  .match-card:hover { border-color: var(--accent); }
+
+  .match-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .match-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+
+  .match-score {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .match-score.high   { color: var(--accent2); }
+  .match-score.medium { color: #f7a84a; }
+  .match-score.low    { color: var(--muted); }
+
+  .match-rationale {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .match-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .match-actions button,
+  .match-actions a {
+    font-size: 0.68rem;
+    padding: 4px 10px;
+    border-radius: 5px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div>
+    <div class="form-title" style="font-size:1.3rem;">agent</div>
+    <div class="form-subtitle" style="margin-top:6px;">
+      scores your resume against all job postings, re-ranks with Gemini, and saves matches to the database
+    </div>
+  </div>
+
+  <div class="agent-layout">
+
+    <!-- ─── LEFT: run controls + log ─── -->
+    <div class="run-panel">
+
+      <div class="agent-status-bar">
+        <div class="status-dot" id="status-dot"></div>
+        <span class="status-text" id="status-text">ready — press "run agent" to find job matches</span>
+      </div>
+
+      <div class="form-card" style="gap:12px;">
+        <div class="form-title">run job matching</div>
+        <div class="form-subtitle" style="margin-top:-6px;">
+          loads your profile + resume, scores all jobs, re-ranks with Gemini, and saves results
+        </div>
+
+        <div class="uid-row">
+          <input id="uid-input" type="text" placeholder="user_id (auto-filled from your profile)" readonly />
+          <button class="btn secondary" style="font-size:0.72rem;padding:8px 12px;" onclick="copyUid()">copy</button>
+        </div>
+
+        <div id="no-uid-warning" style="display:none; font-size:0.72rem; color:var(--danger);">
+          ⚠ no user_id found — save your profile first so the agent knows who you are
+        </div>
+
+        <button class="btn" id="run-btn" onclick="runAgent()" style="align-self:flex-start;">
+          run agent →
+        </button>
+      </div>
+
+      <div class="section-label">activity log</div>
+      <div class="agent-log" id="agent-log">
+        <div class="log-entry">
+          <span class="log-label">agent</span>
+          <div class="log-bubble">waiting — press "run agent" to start job matching</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── RIGHT: match results ─── -->
+    <div class="results-panel">
+      <div class="section-label">top matches <span id="match-count" style="color:var(--muted);"></span></div>
+      <div id="matches-container">
+        <div class="empty-state">matches will appear here after running the agent</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function getUserId() {
+    try { return JSON.parse(localStorage.getItem('applied_user') || '{}').user_id || null; }
+    catch { return null; }
+  }
+
+  // ── init ──────────────────────────────────────────────────────────────────
+  (function init() {
+    const uid = getUserId();
+    if (uid) {
+      document.getElementById('uid-input').value = uid;
+    } else {
+      document.getElementById('no-uid-warning').style.display = 'block';
+      document.getElementById('run-btn').disabled = true;
+    }
+  })();
+
+  function copyUid() {
+    const val = document.getElementById('uid-input').value;
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => toast('user_id copied'));
+  }
+
+  // ── status helpers ────────────────────────────────────────────────────────
+  function setStatus(state, msg) {
+    document.getElementById('status-dot').className  = 'status-dot ' + state;
+    document.getElementById('status-text').textContent = msg;
+  }
+
+  function log(text, type = 'agent') {
+    const container = document.getElementById('agent-log');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `
+      <span class="log-label">${type}</span>
+      <div class="log-bubble ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}">${escHtml(text)}</div>
+    `;
+    container.appendChild(entry);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // ── run agent ─────────────────────────────────────────────────────────────
+  async function runAgent() {
+    const userId = getUserId();
+    if (!userId) { toast('save your profile first', true); return; }
+
+    const btn = document.getElementById('run-btn');
+    btn.disabled = true;
+    btn.textContent = 'running…';
+    setStatus('running', 'agent running — scoring jobs against your resume…');
+
+    document.getElementById('agent-log').innerHTML = '';
+    document.getElementById('matches-container').innerHTML = '<div class="empty-state">running…</div>';
+    document.getElementById('match-count').textContent = '';
+
+    log(`starting agent for user_id: ${userId}`);
+    log('step 1/5 — loading profile + resume');
+
+    try {
+      const res  = await fetch('/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.status === 'error') {
+        log(data.message || 'agent returned an error', 'error');
+        setStatus('error', 'agent failed — see log for details');
+        return;
+      }
+
+      log('step 2/5 — jobs loaded from database');
+      log('step 3/5 — TF-IDF + skill scoring complete');
+      log('step 4/5 — Gemini re-ranking complete');
+      log('step 5/5 — matches saved to job_matches table');
+      log(data.response || 'agent completed successfully', 'success');
+
+      setStatus('done', 'done — matches saved and displayed →');
+      renderMatches(data.matched_jobs || []);
+
+    } catch (e) {
+      log('could not reach /agent — is the server running?', 'error');
+      setStatus('error', 'could not connect to server');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'run agent →';
+    }
+  }
+
+  // ── render match cards ────────────────────────────────────────────────────
+  function renderMatches(jobs) {
+    const container = document.getElementById('matches-container');
+    const userId    = getUserId();
+
+    if (!jobs.length) {
+      container.innerHTML = '<div class="empty-state">no matches found — try adding more jobs or updating your resume</div>';
+      return;
+    }
+
+    document.getElementById('match-count').textContent = `(${jobs.length})`;
+    container.innerHTML = '';
+
+    jobs.slice(0, 10).forEach((j, i) => {
+      const score      = parseFloat(j.score) || 0;
+      const scoreClass = score >= 70 ? 'high' : score >= 45 ? 'medium' : 'low';
+      const jobId      = j.job_postings_id || j.job_posting_id || '';
+      const title      = j.title    || 'job #' + (i + 1);
+      const company    = j.company  || '';
+      const location   = j.location || '';
+      const card       = document.createElement('div');
+      card.className   = 'match-card';
+      card.style.animationDelay = (i * 0.06) + 's';
+
+      card.innerHTML = `
+        <div class="match-header">
+          <div>
+            <span class="match-title">${escHtml(title)}</span>
+            ${company ? `<div style="font-size:0.72rem;color:var(--accent2);margin-top:2px;">${escHtml(company)}${location ? ' · ' + escHtml(location) : ''}</div>` : ''}
+          </div>
+          <span class="match-score ${scoreClass}">${score}/100</span>
+        </div>
+        <div class="match-rationale">${escHtml(j.rationale || '')}</div>
+        <div class="match-actions">
+          <a class="btn secondary" href="/browse">view in jobs →</a>
+          ${userId ? `<button class="btn ghost" onclick="draftApp('${escHtml(jobId)}', this)">draft application</button>` : ''}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  async function draftApp(jobId, btn) {
+    const userId = getUserId();
+    if (!userId || !jobId) return;
+    btn.disabled = true;
+    btn.textContent = 'drafting…';
+    try {
+      const res  = await fetch('/applications/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, job_posting_id: jobId }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        btn.textContent = '✓ drafted';
+        toast('application draft saved — check your dashboard');
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'draft application';
+        toast(data.message || 'draft failed', true);
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'draft application';
+      toast('could not reach /applications/draft', true);
+    }
+  }
+</script>
+{% endblock %}
