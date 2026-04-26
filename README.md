@@ -252,5 +252,5 @@ curl -X POST http://localhost:5001/tailor/generate \
 
 - The `password_hash` column is added to `users` automatically at startup — no manual migration needed.
 - Gemini is used in two places: the agent's re-ranking step (`graph/graph_builder.py`) and the tailor/draft endpoints (`services/draft_generator.py`, `services/tailor.py`).
-- Job listings are pulled from the [Remotive API](https://remotive.com/api/remote-jobs) via `POST /jobs/ingest`.
+- Job listings are pulled from the [Remotive API](https://remotive.com/remote-jobs/api) via `POST /jobs/ingest`.
 - Application draft files (tailored resume + cover letter) are saved to Supabase Storage under the configured bucket.
